@@ -122,3 +122,17 @@ export async function getUpcomingTrips(limit: number): Promise<TripListing[]> {
   });
   return rows.map(toListing);
 }
+
+// Re-read the selected trip on each review, never trust fare or availability
+// supplied by a search result or query string. Keep the same public mapper.
+export async function getTripForReview(id: string) {
+  const row = await prisma.trip.findFirst({
+    where: { id, operator: { active: true } },
+    include: tripInclude,
+  });
+  if (!row) return null;
+  return {
+    trip: toListing(row),
+    departed: row.departureAt.getTime() <= Date.now(),
+  };
+}
