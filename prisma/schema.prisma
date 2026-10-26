@@ -1,0 +1,144 @@
+// Board95 database schema (Milestone 3A).
+// Not yet created: Activity, SelfDriveRequest and Payment tables.
+// We add each when its milestone arrives.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // The connection URL lives in prisma.config.ts (Prisma 7).
+}
+
+enum City {
+  Blantyre
+  Lilongwe
+  Mzuzu
+}
+
+enum TransportType {
+  BUS
+  TAXI
+}
+
+enum OperatorKind {
+  BUS_COMPANY
+  TAXI_OWNER
+}
+
+// Buses leave from a company STATION; taxis leave from a STAGE.
+enum DeparturePointKind {
+  STATION
+  STAGE
+}
+
+enum UserRole {
+  CUSTOMER
+  OWNER
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+  COMPLETED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?  @unique
+  phone     String?  @unique
+  role      UserRole @default(CUSTOMER)
+  createdAt DateTime @default(now())
+
+  operators Operator[] // companies/vehicles this user owns
+  bookings  Booking[]
+}
+
+// A bus company or an individual taxi owner.
+model Operator {
+  id        String       @id @default(cuid())
+  name      String
+  kind      OperatorKind
+  verified  Boolean      @default(false) // set by an admin (Milestone 6)
+  active    Boolean      @default(true) // "disable" instead of deleting
+  phone     String? // public contact, shown for bus companies only
+  ownerId   String?
+  owner     User?        @relation(fields: [ownerId], references: [id])
+  createdAt DateTime     @default(now())
+
+  vehicles        Vehicle[]
+  trips           Trip[]
+  departurePoints DeparturePoint[]
+}
+
+model Vehicle {
+  id         String   @id @default(cuid())
+  operatorId String
+  operator   Operator @relation(fields: [operatorId], references: [id])
+  model      String
+  plate      String   @unique
+  seats      Int
+
+  trips Trip[]
+}
+
+model DeparturePoint {
+  id         String             @id @default(cuid())
+  city       City
+  name       String
+  kind       DeparturePointKind
+  operatorId String? // set for a company's own station
+  operator   Operator?          @relation(fields: [operatorId], references: [id])
+
+  trips Trip[]
+
+  @@index([city])
+}
+
+model Trip {
+  id               String         @id @default(cuid())
+  operatorId       String
+  operator         Operator       @relation(fields: [operatorId], references: [id])
+  vehicleId        String
+  vehicle          Vehicle        @relation(fields: [vehicleId], references: [id])
+  departurePointId String
+  departurePoint   DeparturePoint @relation(fields: [departurePointId], references: [id])
+
+  type            TransportType
+  origin          City
+  destination     City
+  departureAt     DateTime // stored in UTC; shown in Malawi time (UTC+2)
+  fareMWK         Int // whole kwacha, no decimals
+  seatsTotal      Int
+  seatsAvailable  Int
+  pickupAvailable Boolean       @default(false)
+  pickupFeeMWK    Int?
+
+  bookings Booking[]
+
+  // Speeds up the search on /transport.
+  @@index([origin, destination, departureAt])
+}
+
+model Booking {
+  id              String        @id @default(cuid())
+  tripId          String
+  trip            Trip          @relation(fields: [tripId], references: [id])
+  userId          String
+  user            User          @relation(fields: [userId], references: [id])
+  seats           Int           @default(1)
+  pickupRequested Boolean       @default(false)
+  totalMWK        Int
+  status          BookingStatus @default(PENDING)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([tripId])
+}
