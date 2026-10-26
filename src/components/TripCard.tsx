@@ -47,64 +47,74 @@ export default function TripCard({ trip }: { trip: TripListing }) {
         </span>
       </div>
 
-      <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-        <div>
-          <dt className="text-muted">Departs</dt>
-          <dd className="font-medium">
-            {formatDate(trip.date)}, {trip.departureTime}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-muted">{isBus ? "Bus station" : "Stage"}</dt>
-          <dd className="font-medium">{trip.departurePoint}</dd>
-        </div>
-        <div>
-          <dt className="text-muted">Fare</dt>
-          <dd className="font-medium">{formatMWK(trip.fareMWK)}</dd>
-        </div>
-        <div>
-          <dt className="text-muted">Vehicle</dt>
-          <dd className="font-medium">
-            {trip.vehicle.model} · {trip.vehicle.plate}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-muted">Availability</dt>
-          <dd>
-            <span
-              className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${availability.style}`}
-            >
+      <details className="trip-disclosure">
+        <summary>
+          <span className="trip-summary-primary">
+            <span className="trip-summary-departure">
+              <span className="trip-summary-label">Departs</span>
+              <span className="trip-summary-date">{formatDate(trip.date)}</span>
+              <time className="trip-summary-time">{trip.departureTime}</time>
+            </span>
+            <span className="trip-summary-fare">
+              <span className="trip-summary-label">Fare</span>
+              <strong>{formatMWK(trip.fareMWK)}</strong>
+            </span>
+          </span>
+          <span className="trip-summary-secondary">
+            <span className={`trip-availability ${availability.style}`}>
               {availability.label}
             </span>
-          </dd>
+            <span className="trip-disclosure-action">
+              <span className="trip-disclosure-closed">More details</span>
+              <span className="trip-disclosure-open">Less details</span>
+              <span className="trip-disclosure-chevron" aria-hidden="true" />
+            </span>
+          </span>
+        </summary>
+
+        <div className="trip-details-panel">
+          <h4 className="trip-details-heading">Trip information</h4>
+          <dl className="trip-detail-grid">
+            <div>
+              <dt>{isBus ? "Bus station" : "Stage"}</dt>
+              <dd>{trip.departurePoint}</dd>
+            </div>
+            <div>
+              <dt>Vehicle</dt>
+              <dd className="trip-vehicle-value">
+                <span>{trip.vehicle.model}</span>
+                <span className="trip-plate">{trip.vehicle.plate}</span>
+              </dd>
+            </div>
+            {operator.phone && (
+              <div>
+                <dt>Company phone</dt>
+                <dd>
+                  <a href={`tel:${operator.phone.replace(/\s/g, "")}`}>
+                    {operator.phone}
+                  </a>
+                </dd>
+              </div>
+            )}
+          </dl>
+
+          {trip.pickup.available && (
+            <p className="mt-3 text-sm">
+              <span className="rounded bg-secondary/30 px-2 py-0.5 font-medium">
+                Pickup availabl
+              </span>{" "}
+              <span className="text-muted">+{formatMWK(trip.pickup.extraFeeMWK ?? 0)}</span>
+            </p>
+          )}
+
+          <button
+            disabled
+            className="mt-4 w-full rounded-lg bg-muted/20 px-4 py-2 text-sm font-medium text-muted sm:w-auto"
+          >
+            {soldOut ? "Full" : "Request a seat (coming soon)"}
+          </button>
         </div>
-        {operator.phone && (
-          <div>
-            <dt className="text-muted">Company phone</dt>
-            <dd className="font-medium">
-              <a href={`tel:${operator.phone.replace(/\s/g, "")}`} className="text-primary">
-                {operator.phone}
-              </a>
-            </dd>
-          </div>
-        )}
-      </dl>
-
-      {trip.pickup.available && (
-        <p className="mt-3 text-sm">
-          <span className="rounded bg-secondary/30 px-2 py-0.5 font-medium">
-            Pickup available
-          </span>{" "}
-          <span className="text-muted">+{formatMWK(trip.pickup.extraFeeMWK ?? 0)}</span>
-        </p>
-      )}
-
-      <button
-        disabled
-        className="mt-4 w-full rounded-lg bg-muted/20 px-4 py-2 text-sm font-medium text-muted sm:w-auto"
-      >
-        {soldOut ? "Full" : "Request a seat (coming soon)"}
-      </button>
+      </details>
     </article>
   );
 }
