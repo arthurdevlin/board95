@@ -1,4 +1,5 @@
 import { formatDate, formatMWK } from "@/lib/format";
+import Link from "next/link";
 import type { TripListing } from "@/lib/trips";
 
 // Three clear levels, each with its own colour:
@@ -19,7 +20,7 @@ function getAvailability(left: number, total: number, unit: string) {
   };
 }
 
-export default function TripCard({ trip }: { trip: TripListing }) {
+export default function TripCard({ trip, showReviewLink = true }: { trip: TripListing; showReviewLink?: boolean }) {
   const soldOut = trip.seatsAvailable === 0;
   const isBus = trip.type === "bus";
   const unit = isBus ? "seats" : "spaces";
@@ -99,12 +100,16 @@ export default function TripCard({ trip }: { trip: TripListing }) {
         </p>
       )}
 
-      <button
-        disabled
-        className="mt-4 w-full rounded-lg bg-muted/20 px-4 py-2 text-sm font-medium text-muted sm:w-auto"
-      >
-        {soldOut ? "Full" : "Request a seat (coming soon)"}
-      </button>
+      {showReviewLink && (soldOut ? (
+        <p className="mt-4 text-sm font-medium text-muted">Full</p>
+      ) : (
+        <Link
+          href={`/transport/${encodeURIComponent(trip.id)}`}
+          className="mt-4 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+        >
+          Review trip
+        </Link>
+      ))}
     </article>
   );
 }
