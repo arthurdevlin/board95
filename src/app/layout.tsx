@@ -20,10 +20,8 @@ export default function RootLayout({
     <html lang="en" className={inter.variable}>
       <body className="min-h-screen flex flex-col">
         <Header />
-        <main className="flex-1 mx-auto w-full max-w-5xl px-4 py-6">
-          {children}
-        </main>
-        <footer className="border-t border-black/10 py-4 text-center text-sm text-muted">
+        <main className="site-main flex-1 mx-auto w-full">{children}</main>
+        <footer className="site-footer border-t border-black/10 text-center text-sm">
           Board95 · Blantyre · Lilongwe · Mzuzu
         </footer>
       </body>

@@ -5,18 +5,12 @@ import type { TripListing } from "@/lib/trips";
 // plenty left = green, running low = amber, none = red.
 function getAvailability(left: number, total: number, unit: string) {
   if (left === 0) {
-    return { label: "Full", style: "bg-danger/15 text-danger" };
+    return { label: "Full", tone: "is-full" };
   }
   if (left <= 3) {
-    return {
-      label: `Only ${left} ${unit} left`,
-      style: "bg-secondary/30 text-foreground",
-    };
+    return { label: `Only ${left} ${unit} left`, tone: "is-low" };
   }
-  return {
-    label: `${left} of ${total} ${unit} left`,
-    style: "bg-accent/15 text-accent",
-  };
+  return { label: `${left} of ${total} ${unit} left`, tone: "is-plenty" };
 }
 
 export default function TripCard({ trip }: { trip: TripListing }) {
@@ -47,6 +41,8 @@ export default function TripCard({ trip }: { trip: TripListing }) {
         </span>
       </div>
 
+      <p className="trip-point">{trip.departurePoint}</p>
+
       <details className="trip-disclosure">
         <summary>
           <span className="trip-summary-primary">
@@ -61,7 +57,7 @@ export default function TripCard({ trip }: { trip: TripListing }) {
             </span>
           </span>
           <span className="trip-summary-secondary">
-            <span className={`trip-availability ${availability.style}`}>
+            <span className={`trip-availability ${availability.tone}`}>
               {availability.label}
             </span>
             <span className="trip-disclosure-action">
@@ -75,10 +71,6 @@ export default function TripCard({ trip }: { trip: TripListing }) {
         <div className="trip-details-panel">
           <h4 className="trip-details-heading">Trip information</h4>
           <dl className="trip-detail-grid">
-            <div>
-              <dt>{isBus ? "Bus station" : "Stage"}</dt>
-              <dd>{trip.departurePoint}</dd>
-            </div>
             <div>
               <dt>Vehicle</dt>
               <dd className="trip-vehicle-value">
@@ -101,20 +93,20 @@ export default function TripCard({ trip }: { trip: TripListing }) {
           {trip.pickup.available && (
             <p className="mt-3 text-sm">
               <span className="rounded bg-secondary/30 px-2 py-0.5 font-medium">
-                Pickup availabl
+                Pickup available
               </span>{" "}
               <span className="text-muted">+{formatMWK(trip.pickup.extraFeeMWK ?? 0)}</span>
             </p>
           )}
 
-          <button
-            disabled
-            className="mt-4 w-full rounded-lg bg-muted/20 px-4 py-2 text-sm font-medium text-muted sm:w-auto"
-          >
-            {soldOut ? "Full" : "Request a seat (coming soon)"}
-          </button>
         </div>
       </details>
+
+      <div className="trip-cta">
+        <button type="button" className="btn btn-primary btn-block" disabled>
+          {soldOut ? "Full" : "Request a seat (coming soon)"}
+        </button>
+      </div>
     </article>
   );
 }

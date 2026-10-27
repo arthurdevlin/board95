@@ -460,10 +460,6 @@ export type EnumOperatorKindFieldUpdateOperationsInput = {
   set?: $Enums.OperatorKind
 }
 
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
-}
-
 export type OperatorCreateNestedOneWithoutVehiclesInput = {
   create?: Prisma.XOR<Prisma.OperatorCreateWithoutVehiclesInput, Prisma.OperatorUncheckedCreateWithoutVehiclesInput>
   connectOrCreate?: Prisma.OperatorCreateOrConnectWithoutVehiclesInput

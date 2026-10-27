@@ -2,27 +2,35 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import SearchForm from "@/components/SearchForm";
 import TripCard from "@/components/TripCard";
+import TripCardSkeleton from "@/components/TripCardSkeleton";
 import { getUpcomingTrips } from "@/lib/trips";
 
 export default function Home() {
   return (
     <>
-      <section className="rounded-2xl bg-primary px-4 py-8 text-white sm:px-6">
-        <h1 className="text-3xl font-bold sm:text-4xl">
+      <section className="hero">
+        <h1 className="page-title">
           Travel between Blantyre, Lilongwe and Mzuzu
         </h1>
-        <p className="mt-3 max-w-xl text-white/90">
+        <p>
           Find buses and taxis, see fares and available seats, and hire a car
           when you need one.
         </p>
-        <div className="mt-6">
+        <div>
           <SearchForm />
         </div>
       </section>
 
-      <section className="mt-10">
-        <h2 className="text-xl font-bold">Departing soon</h2>
-        <Suspense fallback={<p className="mt-4 text-muted">Loading…</p>}>
+      <section className="section-gap">
+        <h2 className="section-title">Departing soon</h2>
+        <Suspense
+          fallback={
+            <div className="trip-grid mt-4 grid gap-4 md:grid-cols-2">
+              <TripCardSkeleton />
+              <TripCardSkeleton />
+            </div>
+          }
+        >
           <DepartingSoon />
         </Suspense>
       </section>
@@ -36,10 +44,10 @@ async function DepartingSoon() {
   await connection();
   const soon = await getUpcomingTrips(2);
   if (soon.length === 0) {
-    return <p className="mt-4 text-muted">No upcoming trips yet.</p>;
+    return <p className="empty-state mt-4">No upcoming trips yet.</p>;
   }
   return (
-    <div className="mt-4 grid gap-4 md:grid-cols-2">
+    <div className="trip-grid mt-4 grid gap-4 md:grid-cols-2">
       {soon.map((trip) => (
         <TripCard key={trip.id} trip={trip} />
       ))}

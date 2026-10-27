@@ -29,6 +29,7 @@ enum OperatorKind {
 }
 
 // Buses leave from a company STATION; taxis leave from a STAGE.
+
 enum DeparturePointKind {
   STATION
   STAGE
@@ -48,19 +49,81 @@ enum BookingStatus {
   COMPLETED
 }
 
-model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String?  @unique
-  phone     String?  @unique
-  role      UserRole @default(CUSTOMER)
-  createdAt DateTime @default(now())
+// The User model's core fields (id, email, emailVerified, name, image,
+// createdAt, updatedAt) are managed by Better Auth. role and phone are our
+// own additions, wired in as Better Auth "additional fields".
 
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  phone         String?  @unique
+  role          UserRole @default(CUSTOMER)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions  Session[]
+  accounts  Account[]
   operators Operator[] // companies/vehicles this user owns
   bookings  Booking[]
+
+  @@map("user")
+}
+
+// Everything below this line is Better Auth's own schema (Milestone 3B).
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String? // the user's hashed password, for email/password sign-in
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
 }
 
 // A bus company or an individual taxi owner.
+
 model Operator {
   id        String       @id @default(cuid())
   name      String

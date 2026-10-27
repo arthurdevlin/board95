@@ -10,6 +10,9 @@
   --muted: #596c83;
   --line: #d8e1ed;
   --surface: #fff;
+  --success: #1f6f3f;
+  --success-soft: #e1f4e7;
+  --danger-soft: #fbe9e7;
   --font-sans: var(--font-inter), "Inter", sans-serif;
 }
 
@@ -21,6 +24,9 @@
   --color-accent: var(--accent);
   --color-danger: var(--danger);
   --color-muted: var(--muted);
+  --color-success: var(--success);
+  --color-line: var(--line);
+  --color-surface: var(--surface);
   --font-sans: var(--font-inter);
 }
 
@@ -62,7 +68,7 @@ select:focus-visible {
 }
 
 /* Shared frame and wordmark */
-body > header {
+.site-header {
   position: relative;
   z-index: 1;
   border-color: var(--line) !important;
@@ -70,13 +76,13 @@ body > header {
   backdrop-filter: blur(14px);
 }
 
-body > header > div {
+.site-header > div {
   max-width: 76rem !important;
   min-height: 76px;
   padding-inline: clamp(1rem, 4vw, 3rem) !important;
 }
 
-body > header > div > a:first-child {
+.site-header > div > a:first-child {
   display: inline-flex;
   align-items: center;
   gap: 0.65rem;
@@ -86,7 +92,7 @@ body > header > div > a:first-child {
   letter-spacing: -0.055em;
 }
 
-body > header > div > a:first-child::before {
+.site-header > div > a:first-child::before {
   width: 2rem;
   height: 2rem;
   border-radius: 0.7rem;
@@ -100,26 +106,26 @@ body > header > div > a:first-child::before {
   letter-spacing: -0.04em;
 }
 
-body > header nav {
+.site-header nav {
   gap: clamp(0.85rem, 2.2vw, 1.75rem) !important;
   color: #3b506d;
 }
 
-body > header nav a {
+.site-header nav a {
   border-radius: 999px;
   padding: 0.55rem 0.15rem;
   transition: color 160ms ease;
 }
 
-body > header nav a::before {
+.site-header nav a::before {
   content: none;
 }
 
-body > header nav a:hover {
+.site-header nav a:hover {
   color: var(--primary) !important;
 }
 
-body > header nav span {
+.site-header nav span {
   border-color: #d7e0ec !important;
   background: #edf2f8;
   color: #65748a !important;
@@ -127,12 +133,12 @@ body > header nav span {
   font-weight: 600;
 }
 
-body > main {
+.site-main {
   max-width: 76rem !important;
   padding: clamp(1.5rem, 4vw, 3.5rem) clamp(1rem, 4vw, 3rem) 4rem !important;
 }
 
-body > footer {
+.site-footer {
   border-color: var(--line) !important;
   background: rgb(255 255 255 / 72%);
   color: #65748a !important;
@@ -141,7 +147,7 @@ body > footer {
 }
 
 /* Home page hero */
-body > main > section:first-child:has(form[action="/transport"]) {
+.hero {
   position: relative;
   isolation: isolate;
   overflow: hidden;
@@ -155,7 +161,7 @@ body > main > section:first-child:has(form[action="/transport"]) {
   box-shadow: 0 26px 72px rgb(19 47 87 / 22%);
 }
 
-body > main > section:first-child:has(form[action="/transport"])::after {
+.hero::after {
   position: absolute;
   z-index: -1;
   right: -3.5rem;
@@ -168,7 +174,7 @@ body > main > section:first-child:has(form[action="/transport"])::after {
   content: "";
 }
 
-body > main > section:first-child:has(form[action="/transport"]) h1 {
+.hero h1 {
   max-width: 14ch;
   color: #fffefa;
   font-size: clamp(2.4rem, 5.5vw, 4.6rem);
@@ -176,7 +182,7 @@ body > main > section:first-child:has(form[action="/transport"]) h1 {
   letter-spacing: -0.06em;
 }
 
-body > main > section:first-child:has(form[action="/transport"]) h1::before {
+.hero h1::before {
   display: table;
   margin-bottom: 1.05rem;
   border: 1px solid rgb(220 235 255 / 26%);
@@ -191,7 +197,7 @@ body > main > section:first-child:has(form[action="/transport"]) h1::before {
   line-height: 1.1;
 }
 
-body > main > section:first-child:has(form[action="/transport"]) > p {
+.hero > p {
   max-width: 36rem;
   margin-top: 1.25rem !important;
   color: rgb(250 250 239 / 82%) !important;
@@ -199,12 +205,12 @@ body > main > section:first-child:has(form[action="/transport"]) > p {
   line-height: 1.7;
 }
 
-body > main > section:first-child:has(form[action="/transport"]) > div {
+.hero > div {
   margin-top: clamp(2rem, 4vw, 3rem) !important;
 }
 
 /* Search controls: polished, readable and touch friendly */
-form[action="/transport"] {
+.search-form {
   gap: 0.9rem !important;
   border: 1px solid rgb(26 60 104 / 11%);
   border-radius: 1.1rem !important;
@@ -213,7 +219,7 @@ form[action="/transport"] {
   box-shadow: 0 16px 42px rgb(12 40 82 / 14%) !important;
 }
 
-form[action="/transport"] label {
+.search-form label {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -224,8 +230,8 @@ form[action="/transport"] label {
   text-transform: uppercase;
 }
 
-form[action="/transport"] select,
-form[action="/transport"] input {
+.search-form select,
+.search-form input {
   min-height: 3.25rem;
   border: 1px solid #d8e1ec !important;
   border-radius: 0.72rem !important;
@@ -239,7 +245,7 @@ form[action="/transport"] input {
   transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
 }
 
-form[action="/transport"] select {
+.search-form select {
   appearance: none;
   padding-right: 2.6rem !important;
   background-image:
@@ -252,35 +258,35 @@ form[action="/transport"] select {
   background-size: 5px 5px;
 }
 
-form[action="/transport"] select:hover,
-form[action="/transport"] input:hover {
+.search-form select:hover,
+.search-form input:hover {
   border-color: #91acd0 !important;
   background-color: #fff !important;
 }
 
-form[action="/transport"] select:focus,
-form[action="/transport"] input:focus {
+.search-form select:focus,
+.search-form input:focus {
   border-color: #3974b6 !important;
   box-shadow: 0 0 0 3px rgb(57 116 182 / 16%);
 }
 
-form[action="/transport"] select:focus {
+.search-form select:focus {
   background-position:
     calc(100% - 16px) calc(50% + 1px),
     calc(100% - 12px) calc(50% + 1px);
 }
 
-form[action="/transport"] option {
+.search-form option {
   background: #fff;
   color: #172a43;
 }
 
-form[action="/transport"] option:checked {
+.search-form option:checked {
   background: #dceafa;
   color: #173e78;
 }
 
-form[action="/transport"] button {
+.search-form button {
   min-height: 3.25rem;
   border-radius: 0.72rem !important;
   background: var(--primary) !important;
@@ -290,19 +296,19 @@ form[action="/transport"] button {
   transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
 }
 
-form[action="/transport"] button:hover {
+.search-form button:hover {
   background: #102e5d !important;
   box-shadow: 0 9px 20px rgb(23 62 120 / 26%);
   transform: translateY(-1px);
 }
 
 /* Results and trip cards */
-body > main > section:not(:first-child) {
+.section-gap {
   margin-top: clamp(2.5rem, 5vw, 4.5rem) !important;
 }
 
-body > main > section:not(:first-child) > h2,
-body > main > section > h1 {
+.section-title,
+.page-title {
   color: var(--foreground);
   font-size: clamp(1.65rem, 3vw, 2.25rem);
   font-weight: 700;
@@ -310,7 +316,7 @@ body > main > section > h1 {
   line-height: 1.15;
 }
 
-body > main > section:not(:first-child) > h2::after {
+.section-title::after {
   display: block;
   width: 2.4rem;
   height: 3px;
@@ -320,21 +326,21 @@ body > main > section:not(:first-child) > h2::after {
   content: "";
 }
 
-body > main > section:first-child:not(:has(form[action="/transport"])) > h1 {
+.page-title.page-title--plain {
   margin-bottom: 1.5rem;
 }
 
-body > main > section:first-child:not(:has(form[action="/transport"])) > p {
+.page-lead {
   margin-top: 1rem;
   color: var(--muted);
 }
 
-body > main > section > div:has(> article) {
+.trip-grid {
   gap: 1.1rem !important;
   align-items: start !important;
 }
 
-article {
+.trip-card {
   position: relative;
   overflow: hidden;
   border: 1px solid #dbe4ef !important;
@@ -345,20 +351,20 @@ article {
   transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 
-article:hover {
+.trip-card:hover {
   border-color: #b8cbe1 !important;
   box-shadow: 0 14px 30px rgb(25 56 97 / 13%) !important;
   transform: translateY(-2px);
 }
 
-article h3 {
+.trip-card h3 {
   color: #173a6b;
   font-size: clamp(1.18rem, 2vw, 1.4rem) !important;
   font-weight: 700 !important;
   letter-spacing: -0.035em;
 }
 
-article > div:first-child > span {
+.trip-card > div:first-child > span {
   border-radius: 999px !important;
   border: 1px solid #91acd0;
   background: #173e78 !important;
@@ -370,7 +376,7 @@ article > div:first-child > span {
   box-shadow: 0 4px 10px rgb(23 62 120 / 16%);
 }
 
-article > div:first-child > span::before {
+.trip-card > div:first-child > span::before {
   display: inline-block;
   width: 0.38rem;
   height: 0.38rem;
@@ -381,7 +387,7 @@ article > div:first-child > span::before {
   vertical-align: 0.06rem;
 }
 
-article > div:first-child p {
+.trip-card > div:first-child p {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -397,7 +403,7 @@ article > div:first-child p {
   line-height: 1.35;
 }
 
-article > div:first-child p span {
+.trip-card > div:first-child p span {
   border-radius: 999px !important;
   border: 1px solid #98d08f;
   background: #d9f3cf !important;
@@ -590,26 +596,16 @@ article > div:first-child p span {
   color: #315c77;
 }
 .trip-details-panel > p span:first-child { background: transparent !important; }
-.trip-details-panel > button {
-  min-height: 3.25rem;
-  border-radius: 0.75rem !important;
-  background: var(--primary) !important;
-  color: #fff !important;
-  font-weight: 650 !important;
-  box-shadow: 0 6px 15px rgb(23 62 120 / 18%);
-  opacity: 0.66;
-  cursor: not-allowed;
-}
 /* Filter summary and honest empty states */
-body > main > section > div:has(> form[action="/transport"]) {
+.search-panel {
   margin-top: 1.5rem !important;
 }
 
-body > main > section > div:has(> form[action="/transport"]) + div {
+.results-bar {
   margin-top: 1.5rem !important;
 }
 
-body > main > section > div:has(> form[action="/transport"]) + div > p:first-child {
+.results-bar > p:first-child {
   display: inline-flex;
   align-items: center;
   border: 1px solid #b9cce3;
@@ -621,7 +617,7 @@ body > main > section > div:has(> form[action="/transport"]) + div > p:first-chi
   font-weight: 650;
 }
 
-body > main a[href="/transport"] {
+.chip-link {
   display: inline-flex;
   align-items: center;
   border: 1px solid #a9c0de;
@@ -635,13 +631,13 @@ body > main a[href="/transport"] {
   transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
-body > main a[href="/transport"]:hover {
+.chip-link:hover {
   border-color: #789ac4;
   background: #dce9f8;
   box-shadow: 0 5px 13px rgb(23 62 120 / 13%);
 }
 
-body > main p[class*="border-dashed"] {
+.empty-state {
   border-color: #c7d5e5 !important;
   border-radius: 0.85rem !important;
   background: rgb(255 255 255 / 78%);
@@ -649,7 +645,7 @@ body > main p[class*="border-dashed"] {
   padding: 2.25rem 1.5rem !important;
 }
 
-body > main p[class*="rounded-lg"][class*="bg-secondary"] {
+.notice {
   border: 1px solid #ead7a5;
   border-radius: 0.85rem !important;
   background: #fcf5e3 !important;
@@ -657,22 +653,22 @@ body > main p[class*="rounded-lg"][class*="bg-secondary"] {
 }
 
 @media (max-width: 640px) {
-  article > div:first-child {
+  .trip-card > div:first-child {
     align-items: flex-start;
     gap: 0.6rem !important;
   }
 
-  article > div:first-child > div {
+  .trip-card > div:first-child > div {
     min-width: 0;
     flex: 1 1 auto;
   }
 
-  article > div:first-child h3 {
+  .trip-card > div:first-child h3 {
     overflow-wrap: anywhere;
     line-height: 1.2;
   }
 
-  article > div:first-child > span {
+  .trip-card > div:first-child > span {
     flex: 0 0 auto;
     white-space: nowrap;
     padding: 0.38rem 0.62rem !important;
@@ -680,33 +676,33 @@ body > main p[class*="rounded-lg"][class*="bg-secondary"] {
     letter-spacing: 0.1em;
   }
 
-  body > header > div {
+  .site-header > div {
     min-height: 68px;
   }
 
-  body > header nav {
+  .site-header nav {
     gap: 0.5rem 1rem !important;
     font-size: 0.8rem;
   }
 
-  body > header nav span {
+  .site-header nav span {
     display: none;
   }
 
-  body > main > section:first-child:has(form[action="/transport"]) {
+  .hero {
     border-radius: 1.35rem !important;
     padding: 2rem 1.1rem 1.2rem !important;
   }
 
-  body > main > section:first-child:has(form[action="/transport"]) h1 {
+  .hero h1 {
     font-size: clamp(2.25rem, 10.5vw, 3.3rem);
   }
 
-  form[action="/transport"] {
+  .search-form {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 
-  form[action="/transport"] button {
+  .search-form button {
     width: 100%;
   }
 
@@ -722,3 +718,222 @@ body > main p[class*="rounded-lg"][class*="bg-secondary"] {
     animation-iteration-count: 1 !important;
   }
 }
+
+
+/* ==========================================================================
+   Board95 component classes (use these in new components instead of
+   position-based selectors such as "body > main > section")
+   ========================================================================== */
+
+/* Availability tones, independent of the brand accent colour */
+.trip-availability.is-plenty { background: var(--success-soft); color: var(--success); }
+.trip-availability.is-low { background: #fcf0c8; color: #5e4600; }
+.trip-availability.is-full { background: var(--danger-soft); color: #8a2b26; }
+
+/* Where the vehicle leaves from: visible without opening the card */
+.trip-point {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.8rem;
+  color: #234d80;
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+.trip-point::before {
+  width: 0.55rem;
+  height: 0.55rem;
+  flex: none;
+  border-radius: 50% 50% 50% 0;
+  background: var(--primary);
+  content: "";
+  transform: rotate(-45deg);
+}
+.trip-cta { margin-top: 1rem; }
+
+/* Empty states and notices stay readable inside the navy hero panel */
+.hero > .empty-state,
+.hero > .notice {
+  max-width: none;
+  margin-top: 1.5rem !important;
+  color: #172a43 !important;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.hero > .empty-state { background: rgb(255 255 255 / 94%); }
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 0.72rem;
+  padding: 0 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 6px 15px rgb(23 62 120 / 22%);
+}
+.btn-primary:hover { background: #102e5d; transform: translateY(-1px); }
+.btn-secondary { border-color: #a9c0de; background: #e8f0fb; color: #173e78; }
+.btn-secondary:hover { background: #dce9f8; }
+.btn-block { width: 100%; }
+.btn:disabled,
+.btn[aria-disabled="true"] { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+/* Forms */
+.auth-shell { max-width: 28rem; margin-inline: auto; }
+.form-card {
+  border: 1px solid var(--line);
+  border-radius: 1.1rem;
+  background: var(--surface);
+  padding: clamp(1.25rem, 3vw, 2rem);
+  box-shadow: 0 16px 42px rgb(12 40 82 / 10%);
+}
+.form-card h1 { color: var(--foreground); font-size: 1.6rem; font-weight: 700; letter-spacing: -0.04em; }
+.form-stack { display: grid; gap: 1rem; margin-top: 1.25rem; }
+.field { display: flex; flex-direction: column; gap: 0.45rem; }
+.field > label {
+  color: #51647d;
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+.field input {
+  min-height: 3.25rem;
+  width: 100%;
+  border: 1px solid #d8e1ec;
+  border-radius: 0.72rem;
+  background: #f8faff;
+  color: var(--foreground);
+  padding-inline: 0.85rem;
+  font-size: 0.95rem;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+.field input:focus { border-color: #3974b6; box-shadow: 0 0 0 3px rgb(57 116 182 / 16%); }
+.field-hint { color: var(--muted); font-size: 0.8rem; }
+.field-row { position: relative; }
+.field-row input { padding-right: 4.5rem; }
+.field-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.5rem;
+  transform: translateY(-50%);
+  border-radius: 0.5rem;
+  background: transparent;
+  padding: 0.35rem 0.6rem;
+  color: #234d80;
+  font-size: 0.8rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+.alert { border-radius: 0.85rem; padding: 0.75rem 1rem; font-size: 0.9rem; line-height: 1.45; }
+.alert-error { border: 1px solid #efc2bd; background: var(--danger-soft); color: #7d2420; }
+.alert-info { border: 1px solid #b9cce3; background: #e8f0fb; color: #173e78; }
+.form-footer { margin-top: 1.25rem; color: var(--muted); font-size: 0.9rem; }
+.form-footer a { color: #174b8c; font-weight: 650; }
+
+/* Filter chips (quick dates, sorting) */
+.chip-group { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.chip-group-label {
+  color: #d3e1f5;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.chip {
+  display: inline-flex;
+  min-height: 2.25rem;
+  align-items: center;
+  border: 1px solid #a9c0de;
+  border-radius: 999px;
+  background: #e8f0fb;
+  padding: 0 0.85rem;
+  color: #173e78;
+  font-size: 0.85rem;
+  font-weight: 650;
+  text-decoration: none;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+.chip:hover { background: #dce9f8; border-color: #789ac4; }
+.chip[aria-current="true"] { border-color: #e3c46f; background: var(--secondary); color: #2e2308; }
+.filter-bar { display: flex; flex-wrap: wrap; gap: 0.75rem 1.5rem; }
+
+/* Header user menu */
+.user-menu { display: flex; align-items: center; gap: 0.6rem; }
+.user-chip {
+  max-width: 9rem;
+  overflow: hidden;
+  border: 1px solid #d7e0ec;
+  border-radius: 999px;
+  background: #edf2f8;
+  padding: 0.3rem 0.75rem;
+  color: #234d80;
+  font-size: 0.78rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.link-button {
+  background: none;
+  padding: 0.3rem 0.1rem;
+  color: #3b506d;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.link-button:hover { color: var(--primary); }
+
+/* Booking status badges (used from the booking history phase onward) */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.status-pending { background: #fcf0c8; color: #5e4600; }
+.status-accepted { background: var(--success-soft); color: var(--success); }
+.status-declined,
+.status-cancelled { background: #eceff3; color: #4a5a6e; }
+.status-completed { background: #e8f0fb; color: #173e78; }
+
+/* Account page */
+.panel {
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--surface);
+  padding: clamp(1.1rem, 2.5vw, 1.6rem);
+  box-shadow: 0 5px 18px rgb(25 56 97 / 6%);
+}
+.panel + .panel { margin-top: 1.25rem; }
+.panel h2 { color: #173a6b; font-size: 1.15rem; font-weight: 700; letter-spacing: -0.03em; }
+.kv { display: grid; gap: 0.75rem; margin-top: 1rem; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); }
+.kv dt { color: #5b6f88; font-size: 0.68rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; }
+.kv dd { margin-top: 0.2rem; color: #203b5e; font-weight: 650; overflow-wrap: anywhere; }
+
+/* Loading skeletons (pure CSS, no JavaScript) */
+@keyframes b95-shimmer { to { background-position: -200% 0; } }
+.skeleton {
+  border-radius: 0.6rem;
+  background: linear-gradient(90deg, #e3eaf4 25%, #f1f5fb 50%, #e3eaf4 75%);
+  background-size: 200% 100%;
+  animation: b95-shimmer 1.4s linear infinite;
+}
+.skeleton-card { border: 1px solid #dbe4ef; border-radius: 0.95rem; background: var(--surface); padding: 1.2rem; }
+
+.user-menu-placeholder { display: inline-block; width: 4.5rem; height: 2rem; }

@@ -1,50 +1,42 @@
 import { CITIES } from "@/lib/cities";
 import type { Filters } from "@/lib/trips";
-
-const field =
-  "w-full rounded-lg border border-black/20 bg-white px-3 py-2 text-foreground";
+import DateField from "@/components/DateField";
 
 // A plain HTML form with method GET. On submit the browser goes to
-// /transport?origin=...&destination=... No JavaScript needed, and every
-// search has a shareable, bookmarkable URL.
+// /transport?origin=...&destination=... No JavaScript needed for the
+// search itself — DateField only adds convenience buttons on top.
 export default function SearchForm({ defaults = {} }: { defaults?: Filters }) {
   return (
     <form
       key={JSON.stringify(defaults)}
       action="/transport"
       method="get"
-      className="grid gap-3 rounded-xl bg-white p-4 text-foreground shadow-sm sm:grid-cols-2 lg:grid-cols-5"
+      className="search-form"
     >
-      <label className="text-sm font-medium">
+      <label className="field">
         From
-        <select name="origin" defaultValue={defaults.origin ?? ""} className={field}>
+        <select name="origin" defaultValue={defaults.origin ?? ""}>
           <option value="">Anywhere</option>
           {CITIES.map((c) => <option key={c}>{c}</option>)}
         </select>
       </label>
-      <label className="text-sm font-medium">
+      <label className="field">
         To
-        <select name="destination" defaultValue={defaults.destination ?? ""} className={field}>
+        <select name="destination" defaultValue={defaults.destination ?? ""}>
           <option value="">Anywhere</option>
           {CITIES.map((c) => <option key={c}>{c}</option>)}
         </select>
       </label>
-      <label className="text-sm font-medium">
-        Date
-        <input type="date" name="date" defaultValue={defaults.date ?? ""} className={field} />
-      </label>
-      <label className="text-sm font-medium">
+      <DateField defaultValue={defaults.date} />
+      <label className="field">
         Type
-        <select name="type" defaultValue={defaults.type ?? ""} className={field}>
+        <select name="type" defaultValue={defaults.type ?? ""}>
           <option value="">Bus or taxi</option>
           <option value="bus">Bus</option>
           <option value="taxi">Taxi</option>
         </select>
       </label>
-      <button
-        type="submit"
-        className="self-end rounded-lg bg-primary px-4 py-2 font-semibold text-white hover:opacity-90"
-      >
+      <button type="submit" className="btn btn-primary">
         Search
       </button>
     </form>

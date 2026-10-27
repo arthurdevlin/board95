@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import SearchForm from "@/components/SearchForm";
 import TripCard from "@/components/TripCard";
+import TripCardSkeleton from "@/components/TripCardSkeleton";
 import { parseFilters, searchTrips } from "@/lib/trips";
 
 export const metadata = { title: "Find transport | Board95" };
@@ -19,8 +20,17 @@ export default function TransportPage({
 }) {
   return (
     <section>
-      <h1 className="text-2xl font-bold">Find transport</h1>
-      <Suspense fallback={<p className="mt-6 text-muted">Loading trips…</p>}>
+      <h1 className="page-title page-title--plain">Find transport</h1>
+      <Suspense
+        fallback={
+          <div className="trip-grid mt-4 grid gap-4 md:grid-cols-2">
+            <TripCardSkeleton />
+            <TripCardSkeleton />
+            <TripCardSkeleton />
+            <TripCardSkeleton />
+          </div>
+        }
+      >
         <Results searchParams={searchParams} />
       </Suspense>
     </section>
@@ -37,33 +47,33 @@ async function Results({ searchParams }: { searchParams: SearchParams }) {
 
   return (
     <>
-      <div className="mt-4">
+      <div className="search-panel">
         <SearchForm defaults={filters} />
       </div>
 
-      <div className="mt-6 flex items-center justify-between">
-        <p className="text-sm text-muted">
+      <div className="results-bar">
+        <p>
           {results.length} {results.length === 1 ? "trip" : "trips"} found
         </p>
         {hasFilters && (
-          <Link href="/transport" className="text-sm font-medium text-primary">
+          <Link href="/transport" className="chip-link">
             Clear filters
           </Link>
         )}
       </div>
 
       {sameCity && (
-        <p className="mt-3 rounded-lg bg-secondary/30 p-3 text-sm">
+        <p className="notice">
           From and To are the same city. Pick two different cities.
         </p>
       )}
 
       {results.length === 0 ? (
-        <p className="mt-6 rounded-xl border border-dashed border-black/20 p-6 text-center text-muted">
+        <p className="empty-state">
           No trips match your search. Try another date or clear the filters.
         </p>
       ) : (
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <div className="trip-grid mt-4 grid gap-4 md:grid-cols-2">
           {results.map((trip) => (
             <TripCard key={trip.id} trip={trip} />
           ))}
