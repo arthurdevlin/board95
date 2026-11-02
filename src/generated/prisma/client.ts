@@ -86,3 +86,38 @@ export type Trip = Prisma.TripModel
  * 
  */
 export type Booking = Prisma.BookingModel
+/**
+ * Model CarHireListing
+ * 
+ */
+export type CarHireListing = Prisma.CarHireListingModel
+/**
+ * Model Application
+ * 
+ */
+export type Application = Prisma.ApplicationModel
+/**
+ * Model BookingMessage
+ * 
+ */
+export type BookingMessage = Prisma.BookingMessageModel
+/**
+ * Model CarHireRequest
+ * 
+ */
+export type CarHireRequest = Prisma.CarHireRequestModel
+/**
+ * Model RateLimitBucket
+ * 
+ */
+export type RateLimitBucket = Prisma.RateLimitBucketModel
+/**
+ * Model EmailDelivery
+ * 
+ */
+export type EmailDelivery = Prisma.EmailDeliveryModel
+/**
+ * Model OperatorMember
+ * 
+ */
+export type OperatorMember = Prisma.OperatorMemberModel

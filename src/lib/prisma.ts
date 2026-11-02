@@ -15,6 +15,14 @@ function createClient() {
   return new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 }
 
-export const prisma = globalForPrisma.prisma ?? createClient();
+// A schema change can add delegates while Next.js is running. During hot reload,
+// the global singleton may still point at a PrismaClient generated from the old
+// schema, so replace it when it does not expose the current model delegates.
+const cachedPrisma = globalForPrisma.prisma;
+const prisma = cachedPrisma && typeof cachedPrisma.operatorMember !== "undefined"
+  ? cachedPrisma
+  : createClient();
+
+export { prisma };
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;

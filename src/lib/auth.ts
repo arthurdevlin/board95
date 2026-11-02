@@ -7,14 +7,31 @@ import { prisma } from "@/lib/prisma";
 // code that needs auth.api.* import this same instance.
 export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: "postgresql" }),
+  baseURL: process.env.BETTER_AUTH_URL,
 
   emailAndPassword: {
     enabled: true,
-    // We don't have an email provider wired up yet (Milestone 3B keeps it
-    // simple), so accounts are usable immediately after signing up.
+    // Accounts can sign in immediately; booking and application notifications
+    // use the optional Resend integration without blocking account creation.
     requireEmailVerification: false,
     minPasswordLength: 8,
+    sendResetPassword: async ({ user, url }) => {
+      const { sendBoard95Email } = await import("@/lib/email");
+      await sendBoard95Email({ to: user.email, subject: "Reset your Board95 password", lines: ["We received a request to reset your password. If you did not make this request, you can ignore this email."], action: { label: "Reset password", href: url } });
+    },
   },
+
+  ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+    ? {
+        socialProviders: {
+          google: {
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            prompt: "select_account" as const,
+          },
+        },
+      }
+    : {}),
 
   // role and phone live on our own User table; this tells Better Auth to
   // read and write them instead of ignoring them.

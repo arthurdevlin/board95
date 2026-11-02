@@ -1,56 +1,100 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { getSession } from "@/lib/session";
-import SignOutButton from "@/components/SignOutButton";
+import { prisma } from "@/lib/prisma";
+import RoleNavigation from "@/components/RoleNavigation";
+import type { NavigationEntry } from "@/components/DashboardSectionNavigation";
 
-const links = [
-  { href: "/transport", label: "Find transport" },
-  { href: "/car-hire", label: "Car hire" },
-];
-
-// The header itself is static (so every page can still be prerendered).
-// Only AccountStatus reads the session, inside its own <Suspense>, so a
-// session lookup never forces the whole site to render per-request.
 export default function Header() {
-  return (
-    <header className="site-header border-b border-black/10 bg-white">
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 px-4 py-3">
-        <Link href="/" className="text-xl font-bold text-primary">
-          Board95
-        </Link>
-        <nav className="flex items-center gap-4 text-sm font-medium">
-          {links.map((l) => (
-            <Link key={l.href} href={l.href} className="hover:text-primary">
-              {l.label}
-            </Link>
-          ))}
-          <Suspense fallback={<span className="user-menu-placeholder" />}>
-            <AccountStatus />
-          </Suspense>
-        </nav>
-      </div>
-    </header>
-  );
+  return <header className="site-header"><div className="site-header-inner"><Link href="/" className="brand-link"><Image src="/b95logo.png" alt="Board95" width={150} height={20} className="site-logo" loading="eager"/></Link><Suspense fallback={<span className="user-menu-placeholder"/>}><HeaderMenu/></Suspense></div></header>;
 }
 
-async function AccountStatus() {
+async function HeaderMenu() {
   await connection();
   const session = await getSession();
-
-  if (!session) {
-    return (
-      <Link href="/sign-in" className="chip">
-        Sign in
-      </Link>
-    );
+  if (!session) return <RoleNavigation signedIn={false} links={[{href:"/",label:"Home"},{href:"/transport",label:"Find transport"},{href:"/car-hire",label:"Car hire"}]}/>;
+  let links: {href:string;label:string}[];
+  let groups: NavigationEntry[] = [];
+  if (session.user.role === "ADMIN") {
+    links = [{href:"/admin",label:"Admin dashboard"}];
+    groups = [
+      { label: "Overview", href: "/admin#overview" },
+      { label: "Accounts", children: [
+        { label: "Account applications", href: "/admin#account-applications" },
+        { label: "User accounts", href: "/admin#user-accounts" },
+      ] },
+      { label: "Taxi and bus", children: [
+        { label: "Bus companies", href: "/admin#bus-companies" },
+        { label: "Operator applications", href: "/admin#operator-applications" },
+        { label: "Pending bookings", href: "/admin#pending-bookings" },
+        { label: "Recent bookings", href: "/admin#recent-bookings" },
+      ] },
+      { label: "Car hire", children: [
+        { label: "Rental requests", href: "/admin#car-hire-requests" },
+        { label: "Vehicle listings", href: "/admin#car-hire-listings" },
+      ] },
+      { label: "System", children: [
+        { label: "Email delivery queue", href: "/admin#email-queue" },
+      ] },
+    ];
+  } else if (session.user.role === "OWNER") {
+    const operators = await prisma.operator.findMany({where:{ownerId:session.user.id},select:{id:true,name:true,kind:true,active:true,verified:true}});
+    const kinds = new Set(operators.map((operator) => operator.kind));
+    const label = kinds.size > 1 ? "Operator dashboard" : kinds.has("BUS_COMPANY") ? "Bus dashboard" : "Taxi dashboard";
+    links = [{href:"/operator",label}];
+    const workspaceSections: NavigationEntry[] = [
+      { label: "Overview", href: "/operator#overview" },
+      ...(operators.length ? [
+      { label: "Operator workspaces", children: operators.map((operator) => ({ label: operator.name, children: [
+        { label: "Workspace summary", href: `/operator#operator-profile-${operator.id}` },
+        { label: "Trip schedule", href: `/operator#operator-trips-${operator.id}` },
+        { label: "Vehicles", href: `/operator#operator-vehicles-${operator.id}` },
+        ...(operator.active && operator.verified ? [{ label: "Add a departure", href: `/operator#operator-add-trip-${operator.id}` }] : []),
+      ] })) },
+      { label: "Bookings", children: [
+        { label: "Pending requests", href: "/operator#operator-bookings" },
+        { label: "Booking history", href: "/operator#operator-booking-history" },
+      ] },
+      ] : []),
+    ];
+    groups = [{ label: "Taxi and bus", children: workspaceSections }];
+  } else if (session.user.role === "CAR_HIRER") {
+    links = [{href:"/car-hire/dashboard",label:"My vehicles"}, {href:"/car-hire/dashboard#rental-requests",label:"Rental requests"}];
+    groups = [{ label: "Car hire", children: [
+      { label: "Overview", href: "/car-hire/dashboard#overview" },
+      { label: "Fleet", children: [
+        { label: "Add a vehicle", href: "/car-hire/dashboard#add-vehicle" },
+        { label: "Your listings", href: "/car-hire/dashboard#my-vehicles" },
+      ] },
+      { label: "Bookings", children: [
+        { label: "Rental requests", href: "/car-hire/dashboard#rental-requests" },
+      ] },
+    ] }];
+  } else if (session.user.role === "CUSTOMER") {
+    const memberships = await prisma.operatorMember.findMany({ where: { userId: session.user.id, operator: { kind: "BUS_COMPANY", active: true } }, select: { operatorId: true, role: true, operator: { select: { name: true, active: true, verified: true } } } });
+    if (memberships.length) {
+      const canManageTrips = memberships.some((membership) => membership.role === "ADMIN");
+      links = [{href:"/operator",label:"Bus dashboard"}];
+      groups = [{ label: "Bus workspace", children: [
+        { label: "Overview", href: "/operator#overview" },
+        { label: "Companies", children: memberships.map((membership) => ({ label: membership.operator.name, children: [
+          { label: "Workspace summary", href: `/operator#operator-profile-${membership.operatorId}` },
+          { label: "Trip schedule", href: `/operator#operator-trips-${membership.operatorId}` },
+          { label: "Vehicles", href: `/operator#operator-vehicles-${membership.operatorId}` },
+          ...(canManageTrips && membership.operator.active && membership.operator.verified ? [{ label: "Add a departure", href: `/operator#operator-add-trip-${membership.operatorId}` }] : []),
+        ] })) },
+        { label: "Bookings", children: [
+          { label: "Pending requests", href: "/operator#operator-bookings" },
+          { label: "Booking history", href: "/operator#operator-booking-history" },
+        ] },
+      ] }];
+    } else {
+      links = [{href:"/transport",label:"Find transport"},{href:"/car-hire",label:"Car hire"},{href:"/account#my-bookings",label:"My bookings"}];
+    }
+  } else {
+    links = [{href:"/transport",label:"Find transport"},{href:"/car-hire",label:"Car hire"},{href:"/account#my-bookings",label:"My bookings"}];
   }
-  return (
-    <span className="user-menu">
-      <Link href="/account" className="user-chip">
-        {session.user.name}
-      </Link>
-      <SignOutButton />
-    </span>
-  );
+  return <RoleNavigation signedIn name={session.user.name} image={session.user.image} links={links} groups={groups}/>;
 }

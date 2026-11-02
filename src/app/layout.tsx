@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
+import ThemePersistence from "@/components/ThemePersistence";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 
@@ -19,6 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable}>
       <body className="min-h-screen flex flex-col">
+        <ThemePersistence />
         <Header />
         <main className="site-main flex-1 mx-auto w-full">{children}</main>
         <footer className="site-footer border-t border-black/10 text-center text-sm">

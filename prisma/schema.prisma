@@ -38,6 +38,7 @@ enum DeparturePointKind {
 enum UserRole {
   CUSTOMER
   OWNER
+  CAR_HIRER
   ADMIN
 }
 
@@ -47,6 +48,48 @@ enum BookingStatus {
   DECLINED
   CANCELLED
   COMPLETED
+}
+
+enum ApplicationKind {
+  TAXI_OWNER
+  BUS_COMPANY
+  CAR_HIRER
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  DECLINED
+}
+
+enum CarHireRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+}
+
+enum CarHireVehicleType {
+  SALOON
+  SUV
+  PICKUP
+  MINIBUS
+  BUS
+  TRUCK
+  LORRY
+  VAN
+  OTHER
+}
+
+enum EmailDeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum OperatorMemberRole {
+  ADMIN
+  STAFF
 }
 
 // The User model's core fields (id, email, emailVerified, name, image,
@@ -61,13 +104,19 @@ model User {
   image         String?
   phone         String?  @unique
   role          UserRole @default(CUSTOMER)
+  active        Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  sessions  Session[]
-  accounts  Account[]
-  operators Operator[] // companies/vehicles this user owns
-  bookings  Booking[]
+  sessions            Session[]
+  accounts            Account[]
+  operators           Operator[] // companies/vehicles this user owns
+  bookings            Booking[]
+  carListings         CarHireListing[]
+  applications        Application[]
+  sentBookingMessages BookingMessage[] @relation("BookingMessageSender")
+  carHireRequests     CarHireRequest[]
+  operatorMemberships OperatorMember[]
 
   @@map("user")
 }
@@ -138,6 +187,7 @@ model Operator {
   vehicles        Vehicle[]
   trips           Trip[]
   departurePoints DeparturePoint[]
+  members         OperatorMember[]
 }
 
 model Vehicle {
@@ -177,6 +227,7 @@ model Trip {
   origin          City
   destination     City
   departureAt     DateTime // stored in UTC; shown in Malawi time (UTC+2)
+  createdAt       DateTime       @default(now())
   fareMWK         Int // whole kwacha, no decimals
   seatsTotal      Int
   seatsAvailable  Int
@@ -190,18 +241,137 @@ model Trip {
 }
 
 model Booking {
-  id              String        @id @default(cuid())
-  tripId          String
-  trip            Trip          @relation(fields: [tripId], references: [id])
-  userId          String
-  user            User          @relation(fields: [userId], references: [id])
-  seats           Int           @default(1)
-  pickupRequested Boolean       @default(false)
-  totalMWK        Int
-  status          BookingStatus @default(PENDING)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id                        String           @id @default(cuid())
+  tripId                    String
+  trip                      Trip             @relation(fields: [tripId], references: [id])
+  userId                    String?
+  user                      User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  guestName                 String?
+  guestPhone                String?
+  guestEmail                String?
+  pickupLocation            String?
+  seats                     Int              @default(1)
+  pickupRequested           Boolean          @default(false)
+  totalMWK                  Int
+  status                    BookingStatus    @default(PENDING)
+  reviewedByAdmin           Boolean          @default(false)
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
+  archivedAt                DateTime?
+  guestAccessTokenHash      String?
+  guestAccessTokenExpiresAt DateTime?
+  messages                  BookingMessage[]
 
   @@index([userId])
   @@index([tripId])
+  @@index([guestPhone, userId])
+}
+
+model CarHireListing {
+  id           String           @id @default(cuid())
+  ownerId      String
+  owner        User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name         String
+  model        String
+  vehicleType  CarHireVehicleType @default(OTHER)
+  lorryCapacityTons Int?
+  contactPhone String?
+  city         City
+  dailyRateMWK Int
+  description  String?
+  photoUrl     String?
+  available    Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  requests     CarHireRequest[]
+
+  @@index([ownerId])
+  @@index([city, available])
+}
+
+model Application {
+  id          String            @id @default(cuid())
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind        ApplicationKind
+  status      ApplicationStatus @default(PENDING)
+  displayName String
+  phone       String
+  createdAt   DateTime          @default(now())
+  reviewedAt  DateTime?
+  reviewedByAdmin Boolean          @default(false)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+model BookingMessage {
+  id              String   @id @default(cuid())
+  bookingId       String
+  booking         Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  senderId        String?
+  sender          User?    @relation("BookingMessageSender", fields: [senderId], references: [id], onDelete: SetNull)
+  guestSenderName String?
+  body            String
+  createdAt       DateTime @default(now())
+
+  @@index([bookingId, createdAt])
+  @@index([senderId, createdAt])
+}
+
+model CarHireRequest {
+  id          String               @id @default(cuid())
+  listingId   String
+  listing     CarHireListing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  passengerId String?
+  passenger   User?                @relation(fields: [passengerId], references: [id], onDelete: SetNull)
+  guestName   String
+  guestPhone  String
+  guestEmail  String?
+  startsAt    DateTime
+  endsAt      DateTime
+  totalMWK    Int
+  status      CarHireRequestStatus @default(PENDING)
+  reviewedByAdmin Boolean          @default(false)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([listingId, startsAt, endsAt])
+  @@index([passengerId, createdAt])
+  @@index([status, createdAt])
+}
+
+model RateLimitBucket {
+  keyHash   String   @id
+  attempts  Int
+  resetAt   DateTime
+  updatedAt DateTime @updatedAt
+}
+
+model EmailDelivery {
+  id        String              @id @default(cuid())
+  recipient String
+  subject   String
+  lines     Json
+  action    Json?
+  status    EmailDeliveryStatus @default(PENDING)
+  attempts  Int                 @default(0)
+  lastError String?
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  sentAt    DateTime?
+
+  @@index([status, createdAt])
+}
+
+model OperatorMember {
+  id         String             @id @default(cuid())
+  operatorId String
+  operator   Operator           @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       OperatorMemberRole
+  createdAt  DateTime           @default(now())
+
+  @@unique([operatorId, userId])
+  @@index([userId, role])
 }

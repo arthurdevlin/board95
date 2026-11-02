@@ -12,6 +12,7 @@ export type TripListing = {
   destination: City;
   date: string; // "YYYY-MM-DD", Malawi time
   departureTime: string; // "HH:mm", Malawi time
+  createdAt: Date;
   departurePoint: string;
   fareMWK: number;
   seatsTotal: number;
@@ -21,13 +22,24 @@ export type TripListing = {
   operator: { name: string; verified: boolean; phone?: string };
 };
 
-const tripInclude = {
-  operator: true,
-  vehicle: true,
-  departurePoint: true,
-} satisfies Prisma.TripInclude;
+const tripSelect = {
+  id: true,
+  type: true,
+  origin: true,
+  destination: true,
+  departureAt: true,
+  createdAt: true,
+  fareMWK: true,
+  seatsTotal: true,
+  seatsAvailable: true,
+  pickupAvailable: true,
+  pickupFeeMWK: true,
+  operator: { select: { name: true, verified: true, kind: true, phone: true } },
+  vehicle: { select: { model: true, plate: true } },
+  departurePoint: { select: { name: true } },
+} satisfies Prisma.TripSelect;
 
-type TripRow = Prisma.TripGetPayload<{ include: typeof tripInclude }>;
+type TripRow = Prisma.TripGetPayload<{ select: typeof tripSelect }>;
 
 function toListing(row: TripRow): TripListing {
   return {
@@ -37,6 +49,7 @@ function toListing(row: TripRow): TripListing {
     destination: row.destination,
     date: toMalawiDate(row.departureAt),
     departureTime: toMalawiTime(row.departureAt),
+    createdAt: row.createdAt,
     departurePoint: row.departurePoint.name,
     fareMWK: row.fareMWK,
     seatsTotal: row.seatsTotal,
@@ -64,6 +77,7 @@ export type Filters = {
   destination?: City;
   date?: string;
   type?: TransportType;
+  invalidDate?: boolean;
 };
 
 type RawParams = Record<string, string | string[] | undefined>;
@@ -84,15 +98,31 @@ export function parseFilters(params: RawParams): Filters {
     origin: CITIES.find((c) => c === origin),
     destination: CITIES.find((c) => c === destination),
     date: date && dayRange(date) ? date : undefined,
+    invalidDate: Boolean(date && !dayRange(date)),
     type: type === "bus" || type === "taxi" ? type : undefined,
   };
 }
 
+export function parsePage(params: RawParams): number {
+  const value = first(params.page);
+  if (!value || !/^\d+$/.test(value)) return 1;
+  return Math.min(100_000, Math.max(1, Number(value) || 1));
+}
+
+const SEARCH_PAGE_SIZE = 12;
+
+export type TripSearchResult = {
+  trips: TripListing[];
+  page: number;
+  pageSize: number;
+  total: number;
+};
+
 // The database does the filtering and sorting. Never load every trip and
 // filter in JavaScript: that gets slow as the table grows.
-export async function searchTrips(filters: Filters): Promise<TripListing[]> {
+export async function searchTrips(filters: Filters, requestedPage = 1): Promise<TripSearchResult> {
   const where: Prisma.TripWhereInput = {
-    operator: { active: true },
+    operator: { active: true, verified: true },
   };
   if (filters.origin) where.origin = filters.origin;
   if (filters.destination) where.destination = filters.destination;
@@ -105,18 +135,23 @@ export async function searchTrips(filters: Filters): Promise<TripListing[]> {
     where.departureAt = { gte: new Date() }; // no date picked: upcoming only
   }
 
+  const total = await prisma.trip.count({ where });
+  const pageCount = Math.max(1, Math.ceil(total / SEARCH_PAGE_SIZE));
+  const page = Math.min(requestedPage, pageCount);
   const rows = await prisma.trip.findMany({
     where,
-    include: tripInclude,
+    select: tripSelect,
     orderBy: { departureAt: "asc" },
+    skip: (page - 1) * SEARCH_PAGE_SIZE,
+    take: SEARCH_PAGE_SIZE,
   });
-  return rows.map(toListing);
+  return { trips: rows.map(toListing), page, pageSize: SEARCH_PAGE_SIZE, total };
 }
 
 export async function getUpcomingTrips(limit: number): Promise<TripListing[]> {
   const rows = await prisma.trip.findMany({
-    where: { operator: { active: true }, departureAt: { gte: new Date() } },
-    include: tripInclude,
+    where: { operator: { active: true, verified: true }, departureAt: { gte: new Date() } },
+    select: tripSelect,
     orderBy: { departureAt: "asc" },
     take: limit,
   });

@@ -49,6 +49,7 @@ export type TripMinAggregateOutputType = {
   origin: $Enums.City | null
   destination: $Enums.City | null
   departureAt: Date | null
+  createdAt: Date | null
   fareMWK: number | null
   seatsTotal: number | null
   seatsAvailable: number | null
@@ -65,6 +66,7 @@ export type TripMaxAggregateOutputType = {
   origin: $Enums.City | null
   destination: $Enums.City | null
   departureAt: Date | null
+  createdAt: Date | null
   fareMWK: number | null
   seatsTotal: number | null
   seatsAvailable: number | null
@@ -81,6 +83,7 @@ export type TripCountAggregateOutputType = {
   origin: number
   destination: number
   departureAt: number
+  createdAt: number
   fareMWK: number
   seatsTotal: number
   seatsAvailable: number
@@ -113,6 +116,7 @@ export type TripMinAggregateInputType = {
   origin?: true
   destination?: true
   departureAt?: true
+  createdAt?: true
   fareMWK?: true
   seatsTotal?: true
   seatsAvailable?: true
@@ -129,6 +133,7 @@ export type TripMaxAggregateInputType = {
   origin?: true
   destination?: true
   departureAt?: true
+  createdAt?: true
   fareMWK?: true
   seatsTotal?: true
   seatsAvailable?: true
@@ -145,6 +150,7 @@ export type TripCountAggregateInputType = {
   origin?: true
   destination?: true
   departureAt?: true
+  createdAt?: true
   fareMWK?: true
   seatsTotal?: true
   seatsAvailable?: true
@@ -248,6 +254,7 @@ export type TripGroupByOutputType = {
   origin: $Enums.City
   destination: $Enums.City
   departureAt: Date
+  createdAt: Date
   fareMWK: number
   seatsTotal: number
   seatsAvailable: number
@@ -287,6 +294,7 @@ export type TripWhereInput = {
   origin?: Prisma.EnumCityFilter<"Trip"> | $Enums.City
   destination?: Prisma.EnumCityFilter<"Trip"> | $Enums.City
   departureAt?: Prisma.DateTimeFilter<"Trip"> | Date | string
+  createdAt?: Prisma.DateTimeFilter<"Trip"> | Date | string
   fareMWK?: Prisma.IntFilter<"Trip"> | number
   seatsTotal?: Prisma.IntFilter<"Trip"> | number
   seatsAvailable?: Prisma.IntFilter<"Trip"> | number
@@ -307,6 +315,7 @@ export type TripOrderByWithRelationInput = {
   origin?: Prisma.SortOrder
   destination?: Prisma.SortOrder
   departureAt?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
   fareMWK?: Prisma.SortOrder
   seatsTotal?: Prisma.SortOrder
   seatsAvailable?: Prisma.SortOrder
@@ -330,6 +339,7 @@ export type TripWhereUniqueInput = Prisma.AtLeast<{
   origin?: Prisma.EnumCityFilter<"Trip"> | $Enums.City
   destination?: Prisma.EnumCityFilter<"Trip"> | $Enums.City
   departureAt?: Prisma.DateTimeFilter<"Trip"> | Date | string
+  createdAt?: Prisma.DateTimeFilter<"Trip"> | Date | string
   fareMWK?: Prisma.IntFilter<"Trip"> | number
   seatsTotal?: Prisma.IntFilter<"Trip"> | number
   seatsAvailable?: Prisma.IntFilter<"Trip"> | number
@@ -350,6 +360,7 @@ export type TripOrderByWithAggregationInput = {
   origin?: Prisma.SortOrder
   destination?: Prisma.SortOrder
   departureAt?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
   fareMWK?: Prisma.SortOrder
   seatsTotal?: Prisma.SortOrder
   seatsAvailable?: Prisma.SortOrder
@@ -374,6 +385,7 @@ export type TripScalarWhereWithAggregatesInput = {
   origin?: Prisma.EnumCityWithAggregatesFilter<"Trip"> | $Enums.City
   destination?: Prisma.EnumCityWithAggregatesFilter<"Trip"> | $Enums.City
   departureAt?: Prisma.DateTimeWithAggregatesFilter<"Trip"> | Date | string
+  createdAt?: Prisma.DateTimeWithAggregatesFilter<"Trip"> | Date | string
   fareMWK?: Prisma.IntWithAggregatesFilter<"Trip"> | number
   seatsTotal?: Prisma.IntWithAggregatesFilter<"Trip"> | number
   seatsAvailable?: Prisma.IntWithAggregatesFilter<"Trip"> | number
@@ -387,6 +399,7 @@ export type TripCreateInput = {
   origin: $Enums.City
   destination: $Enums.City
   departureAt: Date | string
+  createdAt?: Date | string
   fareMWK: number
   seatsTotal: number
   seatsAvailable: number
@@ -407,6 +420,7 @@ export type TripUncheckedCreateInput = {
   origin: $Enums.City
   destination: $Enums.City
   departureAt: Date | string
+  createdAt?: Date | string
   fareMWK: number
   seatsTotal: number
   seatsAvailable: number
@@ -421,6 +435,7 @@ export type TripUpdateInput = {
   origin?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   destination?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   departureAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fareMWK?: Prisma.IntFieldUpdateOperationsInput | number
   seatsTotal?: Prisma.IntFieldUpdateOperationsInput | number
   seatsAvailable?: Prisma.IntFieldUpdateOperationsInput | number
@@ -441,6 +456,7 @@ export type TripUncheckedUpdateInput = {
   origin?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   destination?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   departureAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fareMWK?: Prisma.IntFieldUpdateOperationsInput | number
   seatsTotal?: Prisma.IntFieldUpdateOperationsInput | number
   seatsAvailable?: Prisma.IntFieldUpdateOperationsInput | number
@@ -458,6 +474,7 @@ export type TripCreateManyInput = {
   origin: $Enums.City
   destination: $Enums.City
   departureAt: Date | string
+  createdAt?: Date | string
   fareMWK: number
   seatsTotal: number
   seatsAvailable: number
@@ -471,6 +488,7 @@ export type TripUpdateManyMutationInput = {
   origin?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   destination?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   departureAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fareMWK?: Prisma.IntFieldUpdateOperationsInput | number
   seatsTotal?: Prisma.IntFieldUpdateOperationsInput | number
   seatsAvailable?: Prisma.IntFieldUpdateOperationsInput | number
@@ -487,6 +505,7 @@ export type TripUncheckedUpdateManyInput = {
   origin?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   destination?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   departureAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fareMWK?: Prisma.IntFieldUpdateOperationsInput | number
   seatsTotal?: Prisma.IntFieldUpdateOperationsInput | number
   seatsAvailable?: Prisma.IntFieldUpdateOperationsInput | number
@@ -513,6 +532,7 @@ export type TripCountOrderByAggregateInput = {
   origin?: Prisma.SortOrder
   destination?: Prisma.SortOrder
   departureAt?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
   fareMWK?: Prisma.SortOrder
   seatsTotal?: Prisma.SortOrder
   seatsAvailable?: Prisma.SortOrder
@@ -536,6 +556,7 @@ export type TripMaxOrderByAggregateInput = {
   origin?: Prisma.SortOrder
   destination?: Prisma.SortOrder
   departureAt?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
   fareMWK?: Prisma.SortOrder
   seatsTotal?: Prisma.SortOrder
   seatsAvailable?: Prisma.SortOrder
@@ -552,6 +573,7 @@ export type TripMinOrderByAggregateInput = {
   origin?: Prisma.SortOrder
   destination?: Prisma.SortOrder
   departureAt?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
   fareMWK?: Prisma.SortOrder
   seatsTotal?: Prisma.SortOrder
   seatsAvailable?: Prisma.SortOrder
@@ -729,6 +751,7 @@ export type TripCreateWithoutOperatorInput = {
   origin: $Enums.City
   destination: $Enums.City
   departureAt: Date | string
+  createdAt?: Date | string
   fareMWK: number
   seatsTotal: number
   seatsAvailable: number
@@ -747,6 +770,7 @@ export type TripUncheckedCreateWithoutOperatorInput = {
   origin: $Enums.City
   destination: $Enums.City
   departureAt: Date | string
+  createdAt?: Date | string
   fareMWK: number
   seatsTotal: number
   seatsAvailable: number
@@ -793,6 +817,7 @@ export type TripScalarWhereInput = {
   origin?: Prisma.EnumCityFilter<"Trip"> | $Enums.City
   destination?: Prisma.EnumCityFilter<"Trip"> | $Enums.City
   departureAt?: Prisma.DateTimeFilter<"Trip"> | Date | string
+  createdAt?: Prisma.DateTimeFilter<"Trip"> | Date | string
   fareMWK?: Prisma.IntFilter<"Trip"> | number
   seatsTotal?: Prisma.IntFilter<"Trip"> | number
   seatsAvailable?: Prisma.IntFilter<"Trip"> | number
@@ -806,6 +831,7 @@ export type TripCreateWithoutVehicleInput = {
   origin: $Enums.City
   destination: $Enums.City
   departureAt: Date | string
+  createdAt?: Date | string
   fareMWK: number
   seatsTotal: number
   seatsAvailable: number
@@ -824,6 +850,7 @@ export type TripUncheckedCreateWithoutVehicleInput = {
   origin: $Enums.City
   destination: $Enums.City
   departureAt: Date | string
+  createdAt?: Date | string
   fareMWK: number
   seatsTotal: number
   seatsAvailable: number
@@ -864,6 +891,7 @@ export type TripCreateWithoutDeparturePointInput = {
   origin: $Enums.City
   destination: $Enums.City
   departureAt: Date | string
+  createdAt?: Date | string
   fareMWK: number
   seatsTotal: number
   seatsAvailable: number
@@ -882,6 +910,7 @@ export type TripUncheckedCreateWithoutDeparturePointInput = {
   origin: $Enums.City
   destination: $Enums.City
   departureAt: Date | string
+  createdAt?: Date | string
   fareMWK: number
   seatsTotal: number
   seatsAvailable: number
@@ -922,6 +951,7 @@ export type TripCreateWithoutBookingsInput = {
   origin: $Enums.City
   destination: $Enums.City
   departureAt: Date | string
+  createdAt?: Date | string
   fareMWK: number
   seatsTotal: number
   seatsAvailable: number
@@ -941,6 +971,7 @@ export type TripUncheckedCreateWithoutBookingsInput = {
   origin: $Enums.City
   destination: $Enums.City
   departureAt: Date | string
+  createdAt?: Date | string
   fareMWK: number
   seatsTotal: number
   seatsAvailable: number
@@ -970,6 +1001,7 @@ export type TripUpdateWithoutBookingsInput = {
   origin?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   destination?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   departureAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fareMWK?: Prisma.IntFieldUpdateOperationsInput | number
   seatsTotal?: Prisma.IntFieldUpdateOperationsInput | number
   seatsAvailable?: Prisma.IntFieldUpdateOperationsInput | number
@@ -989,6 +1021,7 @@ export type TripUncheckedUpdateWithoutBookingsInput = {
   origin?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   destination?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   departureAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fareMWK?: Prisma.IntFieldUpdateOperationsInput | number
   seatsTotal?: Prisma.IntFieldUpdateOperationsInput | number
   seatsAvailable?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1004,6 +1037,7 @@ export type TripCreateManyOperatorInput = {
   origin: $Enums.City
   destination: $Enums.City
   departureAt: Date | string
+  createdAt?: Date | string
   fareMWK: number
   seatsTotal: number
   seatsAvailable: number
@@ -1017,6 +1051,7 @@ export type TripUpdateWithoutOperatorInput = {
   origin?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   destination?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   departureAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fareMWK?: Prisma.IntFieldUpdateOperationsInput | number
   seatsTotal?: Prisma.IntFieldUpdateOperationsInput | number
   seatsAvailable?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1035,6 +1070,7 @@ export type TripUncheckedUpdateWithoutOperatorInput = {
   origin?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   destination?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   departureAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fareMWK?: Prisma.IntFieldUpdateOperationsInput | number
   seatsTotal?: Prisma.IntFieldUpdateOperationsInput | number
   seatsAvailable?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1051,6 +1087,7 @@ export type TripUncheckedUpdateManyWithoutOperatorInput = {
   origin?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   destination?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   departureAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fareMWK?: Prisma.IntFieldUpdateOperationsInput | number
   seatsTotal?: Prisma.IntFieldUpdateOperationsInput | number
   seatsAvailable?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1066,6 +1103,7 @@ export type TripCreateManyVehicleInput = {
   origin: $Enums.City
   destination: $Enums.City
   departureAt: Date | string
+  createdAt?: Date | string
   fareMWK: number
   seatsTotal: number
   seatsAvailable: number
@@ -1079,6 +1117,7 @@ export type TripUpdateWithoutVehicleInput = {
   origin?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   destination?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   departureAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fareMWK?: Prisma.IntFieldUpdateOperationsInput | number
   seatsTotal?: Prisma.IntFieldUpdateOperationsInput | number
   seatsAvailable?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1097,6 +1136,7 @@ export type TripUncheckedUpdateWithoutVehicleInput = {
   origin?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   destination?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   departureAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fareMWK?: Prisma.IntFieldUpdateOperationsInput | number
   seatsTotal?: Prisma.IntFieldUpdateOperationsInput | number
   seatsAvailable?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1113,6 +1153,7 @@ export type TripUncheckedUpdateManyWithoutVehicleInput = {
   origin?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   destination?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   departureAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fareMWK?: Prisma.IntFieldUpdateOperationsInput | number
   seatsTotal?: Prisma.IntFieldUpdateOperationsInput | number
   seatsAvailable?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1128,6 +1169,7 @@ export type TripCreateManyDeparturePointInput = {
   origin: $Enums.City
   destination: $Enums.City
   departureAt: Date | string
+  createdAt?: Date | string
   fareMWK: number
   seatsTotal: number
   seatsAvailable: number
@@ -1141,6 +1183,7 @@ export type TripUpdateWithoutDeparturePointInput = {
   origin?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   destination?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   departureAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fareMWK?: Prisma.IntFieldUpdateOperationsInput | number
   seatsTotal?: Prisma.IntFieldUpdateOperationsInput | number
   seatsAvailable?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1159,6 +1202,7 @@ export type TripUncheckedUpdateWithoutDeparturePointInput = {
   origin?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   destination?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   departureAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fareMWK?: Prisma.IntFieldUpdateOperationsInput | number
   seatsTotal?: Prisma.IntFieldUpdateOperationsInput | number
   seatsAvailable?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1175,6 +1219,7 @@ export type TripUncheckedUpdateManyWithoutDeparturePointInput = {
   origin?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   destination?: Prisma.EnumCityFieldUpdateOperationsInput | $Enums.City
   departureAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   fareMWK?: Prisma.IntFieldUpdateOperationsInput | number
   seatsTotal?: Prisma.IntFieldUpdateOperationsInput | number
   seatsAvailable?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1222,6 +1267,7 @@ export type TripSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   origin?: boolean
   destination?: boolean
   departureAt?: boolean
+  createdAt?: boolean
   fareMWK?: boolean
   seatsTotal?: boolean
   seatsAvailable?: boolean
@@ -1243,6 +1289,7 @@ export type TripSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   origin?: boolean
   destination?: boolean
   departureAt?: boolean
+  createdAt?: boolean
   fareMWK?: boolean
   seatsTotal?: boolean
   seatsAvailable?: boolean
@@ -1262,6 +1309,7 @@ export type TripSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   origin?: boolean
   destination?: boolean
   departureAt?: boolean
+  createdAt?: boolean
   fareMWK?: boolean
   seatsTotal?: boolean
   seatsAvailable?: boolean
@@ -1281,6 +1329,7 @@ export type TripSelectScalar = {
   origin?: boolean
   destination?: boolean
   departureAt?: boolean
+  createdAt?: boolean
   fareMWK?: boolean
   seatsTotal?: boolean
   seatsAvailable?: boolean
@@ -1288,7 +1337,7 @@ export type TripSelectScalar = {
   pickupFeeMWK?: boolean
 }
 
-export type TripOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "operatorId" | "vehicleId" | "departurePointId" | "type" | "origin" | "destination" | "departureAt" | "fareMWK" | "seatsTotal" | "seatsAvailable" | "pickupAvailable" | "pickupFeeMWK", ExtArgs["result"]["trip"]>
+export type TripOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "operatorId" | "vehicleId" | "departurePointId" | "type" | "origin" | "destination" | "departureAt" | "createdAt" | "fareMWK" | "seatsTotal" | "seatsAvailable" | "pickupAvailable" | "pickupFeeMWK", ExtArgs["result"]["trip"]>
 export type TripInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   operator?: boolean | Prisma.OperatorDefaultArgs<ExtArgs>
   vehicle?: boolean | Prisma.VehicleDefaultArgs<ExtArgs>
@@ -1324,6 +1373,7 @@ export type $TripPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     origin: $Enums.City
     destination: $Enums.City
     departureAt: Date
+    createdAt: Date
     fareMWK: number
     seatsTotal: number
     seatsAvailable: number
@@ -1764,6 +1814,7 @@ export interface TripFieldRefs {
   readonly origin: Prisma.FieldRef<"Trip", 'City'>
   readonly destination: Prisma.FieldRef<"Trip", 'City'>
   readonly departureAt: Prisma.FieldRef<"Trip", 'DateTime'>
+  readonly createdAt: Prisma.FieldRef<"Trip", 'DateTime'>
   readonly fareMWK: Prisma.FieldRef<"Trip", 'Int'>
   readonly seatsTotal: Prisma.FieldRef<"Trip", 'Int'>
   readonly seatsAvailable: Prisma.FieldRef<"Trip", 'Int'>

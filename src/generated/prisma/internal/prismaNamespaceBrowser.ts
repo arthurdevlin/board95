@@ -59,7 +59,14 @@ export const ModelName = {
   Vehicle: 'Vehicle',
   DeparturePoint: 'DeparturePoint',
   Trip: 'Trip',
-  Booking: 'Booking'
+  Booking: 'Booking',
+  CarHireListing: 'CarHireListing',
+  Application: 'Application',
+  BookingMessage: 'BookingMessage',
+  CarHireRequest: 'CarHireRequest',
+  RateLimitBucket: 'RateLimitBucket',
+  EmailDelivery: 'EmailDelivery',
+  OperatorMember: 'OperatorMember'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -86,6 +93,7 @@ export const UserScalarFieldEnum = {
   image: 'image',
   phone: 'phone',
   role: 'role',
+  active: 'active',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -183,6 +191,7 @@ export const TripScalarFieldEnum = {
   origin: 'origin',
   destination: 'destination',
   departureAt: 'departureAt',
+  createdAt: 'createdAt',
   fareMWK: 'fareMWK',
   seatsTotal: 'seatsTotal',
   seatsAvailable: 'seatsAvailable',
@@ -197,15 +206,126 @@ export const BookingScalarFieldEnum = {
   id: 'id',
   tripId: 'tripId',
   userId: 'userId',
+  guestName: 'guestName',
+  guestPhone: 'guestPhone',
+  guestEmail: 'guestEmail',
+  pickupLocation: 'pickupLocation',
   seats: 'seats',
   pickupRequested: 'pickupRequested',
   totalMWK: 'totalMWK',
   status: 'status',
+  reviewedByAdmin: 'reviewedByAdmin',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  archivedAt: 'archivedAt',
+  guestAccessTokenHash: 'guestAccessTokenHash',
+  guestAccessTokenExpiresAt: 'guestAccessTokenExpiresAt'
+} as const
+
+export type BookingScalarFieldEnum = (typeof BookingScalarFieldEnum)[keyof typeof BookingScalarFieldEnum]
+
+
+export const CarHireListingScalarFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  name: 'name',
+  model: 'model',
+  vehicleType: 'vehicleType',
+  lorryCapacityTons: 'lorryCapacityTons',
+  contactPhone: 'contactPhone',
+  city: 'city',
+  dailyRateMWK: 'dailyRateMWK',
+  description: 'description',
+  photoUrl: 'photoUrl',
+  available: 'available',
+  createdAt: 'createdAt'
+} as const
+
+export type CarHireListingScalarFieldEnum = (typeof CarHireListingScalarFieldEnum)[keyof typeof CarHireListingScalarFieldEnum]
+
+
+export const ApplicationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  kind: 'kind',
+  status: 'status',
+  displayName: 'displayName',
+  phone: 'phone',
+  createdAt: 'createdAt',
+  reviewedAt: 'reviewedAt',
+  reviewedByAdmin: 'reviewedByAdmin'
+} as const
+
+export type ApplicationScalarFieldEnum = (typeof ApplicationScalarFieldEnum)[keyof typeof ApplicationScalarFieldEnum]
+
+
+export const BookingMessageScalarFieldEnum = {
+  id: 'id',
+  bookingId: 'bookingId',
+  senderId: 'senderId',
+  guestSenderName: 'guestSenderName',
+  body: 'body',
+  createdAt: 'createdAt'
+} as const
+
+export type BookingMessageScalarFieldEnum = (typeof BookingMessageScalarFieldEnum)[keyof typeof BookingMessageScalarFieldEnum]
+
+
+export const CarHireRequestScalarFieldEnum = {
+  id: 'id',
+  listingId: 'listingId',
+  passengerId: 'passengerId',
+  guestName: 'guestName',
+  guestPhone: 'guestPhone',
+  guestEmail: 'guestEmail',
+  startsAt: 'startsAt',
+  endsAt: 'endsAt',
+  totalMWK: 'totalMWK',
+  status: 'status',
+  reviewedByAdmin: 'reviewedByAdmin',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
-export type BookingScalarFieldEnum = (typeof BookingScalarFieldEnum)[keyof typeof BookingScalarFieldEnum]
+export type CarHireRequestScalarFieldEnum = (typeof CarHireRequestScalarFieldEnum)[keyof typeof CarHireRequestScalarFieldEnum]
+
+
+export const RateLimitBucketScalarFieldEnum = {
+  keyHash: 'keyHash',
+  attempts: 'attempts',
+  resetAt: 'resetAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RateLimitBucketScalarFieldEnum = (typeof RateLimitBucketScalarFieldEnum)[keyof typeof RateLimitBucketScalarFieldEnum]
+
+
+export const EmailDeliveryScalarFieldEnum = {
+  id: 'id',
+  recipient: 'recipient',
+  subject: 'subject',
+  lines: 'lines',
+  action: 'action',
+  status: 'status',
+  attempts: 'attempts',
+  lastError: 'lastError',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  sentAt: 'sentAt'
+} as const
+
+export type EmailDeliveryScalarFieldEnum = (typeof EmailDeliveryScalarFieldEnum)[keyof typeof EmailDeliveryScalarFieldEnum]
+
+
+export const OperatorMemberScalarFieldEnum = {
+  id: 'id',
+  operatorId: 'operatorId',
+  userId: 'userId',
+  role: 'role',
+  createdAt: 'createdAt'
+} as const
+
+export type OperatorMemberScalarFieldEnum = (typeof OperatorMemberScalarFieldEnum)[keyof typeof OperatorMemberScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -214,6 +334,21 @@ export const SortOrder = {
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
+
+
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
 
 
 export const QueryMode = {
@@ -230,4 +365,13 @@ export const NullsOrder = {
 } as const
 
 export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
 

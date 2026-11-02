@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import SearchForm from "@/components/SearchForm";
 import TripCard from "@/components/TripCard";
 import TripCardSkeleton from "@/components/TripCardSkeleton";
-import { parseFilters, searchTrips } from "@/lib/trips";
+import { parseFilters, parsePage, searchTrips } from "@/lib/trips";
 
 export const metadata = { title: "Find transport | Board95" };
 
@@ -40,11 +40,25 @@ export default function TransportPage({
 async function Results({ searchParams }: { searchParams: SearchParams }) {
   // We read the current time and the database, so wait for a real request.
   await connection();
-  const filters = parseFilters(await searchParams); // searchParams is a Promise
-  const results = await searchTrips(filters);
+  const params = await searchParams;
+  const filters = parseFilters(params);
+  const requestedPage = parsePage(params);
   const sameCity = filters.origin && filters.origin === filters.destination;
-  const hasFilters = Object.values(filters).some(Boolean);
-
+  const invalidSearch = Boolean(sameCity || filters.invalidDate);
+  const results = invalidSearch
+    ? { trips: [], page: 1, pageSize: 12, total: 0 }
+    : await searchTrips(filters, requestedPage);
+  const hasFilters = Boolean(filters.origin || filters.destination || filters.date || filters.type || filters.invalidDate);
+  const pageCount = Math.max(1, Math.ceil(results.total / results.pageSize));
+  const pageHref = (page: number) => {
+    const query = new URLSearchParams();
+    if (filters.origin) query.set("origin", filters.origin);
+    if (filters.destination) query.set("destination", filters.destination);
+    if (filters.date) query.set("date", filters.date);
+    if (filters.type) query.set("type", filters.type);
+    query.set("page", String(page));
+    return `/transport?${query.toString()}`;
+  };
   return (
     <>
       <div className="search-panel">
@@ -53,7 +67,7 @@ async function Results({ searchParams }: { searchParams: SearchParams }) {
 
       <div className="results-bar">
         <p>
-          {results.length} {results.length === 1 ? "trip" : "trips"} found
+          {results.total} {results.total === 1 ? "trip" : "trips"} found
         </p>
         {hasFilters && (
           <Link href="/transport" className="chip-link">
@@ -68,16 +82,27 @@ async function Results({ searchParams }: { searchParams: SearchParams }) {
         </p>
       )}
 
-      {results.length === 0 ? (
+      {filters.invalidDate && (
+        <p className="notice" role="alert">That date is invalid. Choose a real calendar date.</p>
+      )}
+
+      {!invalidSearch && results.trips.length === 0 ? (
         <p className="empty-state">
           No trips match your search. Try another date or clear the filters.
         </p>
-      ) : (
+      ) : results.trips.length > 0 ? (
         <div className="trip-grid mt-4 grid gap-4 md:grid-cols-2">
-          {results.map((trip) => (
+          {results.trips.map((trip) => (
             <TripCard key={trip.id} trip={trip} />
           ))}
         </div>
+      ) : null}
+      {pageCount > 1 && (
+        <nav className="results-pagination" aria-label="Trip result pages">
+          {results.page > 1 && <Link className="btn btn-secondary" href={pageHref(results.page - 1)}>Previous</Link>}
+          <span aria-current="page">Page {results.page} of {pageCount}</span>
+          {results.page < pageCount && <Link className="btn btn-secondary" href={pageHref(results.page + 1)}>Next</Link>}
+        </nav>
       )}
     </>
   );

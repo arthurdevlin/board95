@@ -32,6 +32,7 @@ export type UserMinAggregateOutputType = {
   image: string | null
   phone: string | null
   role: $Enums.UserRole | null
+  active: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -44,6 +45,7 @@ export type UserMaxAggregateOutputType = {
   image: string | null
   phone: string | null
   role: $Enums.UserRole | null
+  active: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -56,6 +58,7 @@ export type UserCountAggregateOutputType = {
   image: number
   phone: number
   role: number
+  active: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -70,6 +73,7 @@ export type UserMinAggregateInputType = {
   image?: true
   phone?: true
   role?: true
+  active?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -82,6 +86,7 @@ export type UserMaxAggregateInputType = {
   image?: true
   phone?: true
   role?: true
+  active?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -94,6 +99,7 @@ export type UserCountAggregateInputType = {
   image?: true
   phone?: true
   role?: true
+  active?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -179,6 +185,7 @@ export type UserGroupByOutputType = {
   image: string | null
   phone: string | null
   role: $Enums.UserRole
+  active: boolean
   createdAt: Date
   updatedAt: Date
   _count: UserCountAggregateOutputType | null
@@ -212,12 +219,18 @@ export type UserWhereInput = {
   image?: Prisma.StringNullableFilter<"User"> | string | null
   phone?: Prisma.StringNullableFilter<"User"> | string | null
   role?: Prisma.EnumUserRoleFilter<"User"> | $Enums.UserRole
+  active?: Prisma.BoolFilter<"User"> | boolean
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   sessions?: Prisma.SessionListRelationFilter
   accounts?: Prisma.AccountListRelationFilter
   operators?: Prisma.OperatorListRelationFilter
   bookings?: Prisma.BookingListRelationFilter
+  carListings?: Prisma.CarHireListingListRelationFilter
+  applications?: Prisma.ApplicationListRelationFilter
+  sentBookingMessages?: Prisma.BookingMessageListRelationFilter
+  carHireRequests?: Prisma.CarHireRequestListRelationFilter
+  operatorMemberships?: Prisma.OperatorMemberListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -228,12 +241,18 @@ export type UserOrderByWithRelationInput = {
   image?: Prisma.SortOrderInput | Prisma.SortOrder
   phone?: Prisma.SortOrderInput | Prisma.SortOrder
   role?: Prisma.SortOrder
+  active?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   sessions?: Prisma.SessionOrderByRelationAggregateInput
   accounts?: Prisma.AccountOrderByRelationAggregateInput
   operators?: Prisma.OperatorOrderByRelationAggregateInput
   bookings?: Prisma.BookingOrderByRelationAggregateInput
+  carListings?: Prisma.CarHireListingOrderByRelationAggregateInput
+  applications?: Prisma.ApplicationOrderByRelationAggregateInput
+  sentBookingMessages?: Prisma.BookingMessageOrderByRelationAggregateInput
+  carHireRequests?: Prisma.CarHireRequestOrderByRelationAggregateInput
+  operatorMemberships?: Prisma.OperatorMemberOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -247,12 +266,18 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   emailVerified?: Prisma.BoolFilter<"User"> | boolean
   image?: Prisma.StringNullableFilter<"User"> | string | null
   role?: Prisma.EnumUserRoleFilter<"User"> | $Enums.UserRole
+  active?: Prisma.BoolFilter<"User"> | boolean
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   sessions?: Prisma.SessionListRelationFilter
   accounts?: Prisma.AccountListRelationFilter
   operators?: Prisma.OperatorListRelationFilter
   bookings?: Prisma.BookingListRelationFilter
+  carListings?: Prisma.CarHireListingListRelationFilter
+  applications?: Prisma.ApplicationListRelationFilter
+  sentBookingMessages?: Prisma.BookingMessageListRelationFilter
+  carHireRequests?: Prisma.CarHireRequestListRelationFilter
+  operatorMemberships?: Prisma.OperatorMemberListRelationFilter
 }, "id" | "email" | "phone">
 
 export type UserOrderByWithAggregationInput = {
@@ -263,6 +288,7 @@ export type UserOrderByWithAggregationInput = {
   image?: Prisma.SortOrderInput | Prisma.SortOrder
   phone?: Prisma.SortOrderInput | Prisma.SortOrder
   role?: Prisma.SortOrder
+  active?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.UserCountOrderByAggregateInput
@@ -281,6 +307,7 @@ export type UserScalarWhereWithAggregatesInput = {
   image?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   phone?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   role?: Prisma.EnumUserRoleWithAggregatesFilter<"User"> | $Enums.UserRole
+  active?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
 }
@@ -293,12 +320,18 @@ export type UserCreateInput = {
   image?: string | null
   phone?: string | null
   role?: $Enums.UserRole
+  active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
   operators?: Prisma.OperatorCreateNestedManyWithoutOwnerInput
   bookings?: Prisma.BookingCreateNestedManyWithoutUserInput
+  carListings?: Prisma.CarHireListingCreateNestedManyWithoutOwnerInput
+  applications?: Prisma.ApplicationCreateNestedManyWithoutUserInput
+  sentBookingMessages?: Prisma.BookingMessageCreateNestedManyWithoutSenderInput
+  carHireRequests?: Prisma.CarHireRequestCreateNestedManyWithoutPassengerInput
+  operatorMemberships?: Prisma.OperatorMemberCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -309,12 +342,18 @@ export type UserUncheckedCreateInput = {
   image?: string | null
   phone?: string | null
   role?: $Enums.UserRole
+  active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
   operators?: Prisma.OperatorUncheckedCreateNestedManyWithoutOwnerInput
   bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutUserInput
+  carListings?: Prisma.CarHireListingUncheckedCreateNestedManyWithoutOwnerInput
+  applications?: Prisma.ApplicationUncheckedCreateNestedManyWithoutUserInput
+  sentBookingMessages?: Prisma.BookingMessageUncheckedCreateNestedManyWithoutSenderInput
+  carHireRequests?: Prisma.CarHireRequestUncheckedCreateNestedManyWithoutPassengerInput
+  operatorMemberships?: Prisma.OperatorMemberUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -325,12 +364,18 @@ export type UserUpdateInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
   operators?: Prisma.OperatorUpdateManyWithoutOwnerNestedInput
   bookings?: Prisma.BookingUpdateManyWithoutUserNestedInput
+  carListings?: Prisma.CarHireListingUpdateManyWithoutOwnerNestedInput
+  applications?: Prisma.ApplicationUpdateManyWithoutUserNestedInput
+  sentBookingMessages?: Prisma.BookingMessageUpdateManyWithoutSenderNestedInput
+  carHireRequests?: Prisma.CarHireRequestUpdateManyWithoutPassengerNestedInput
+  operatorMemberships?: Prisma.OperatorMemberUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -341,12 +386,18 @@ export type UserUncheckedUpdateInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
   operators?: Prisma.OperatorUncheckedUpdateManyWithoutOwnerNestedInput
   bookings?: Prisma.BookingUncheckedUpdateManyWithoutUserNestedInput
+  carListings?: Prisma.CarHireListingUncheckedUpdateManyWithoutOwnerNestedInput
+  applications?: Prisma.ApplicationUncheckedUpdateManyWithoutUserNestedInput
+  sentBookingMessages?: Prisma.BookingMessageUncheckedUpdateManyWithoutSenderNestedInput
+  carHireRequests?: Prisma.CarHireRequestUncheckedUpdateManyWithoutPassengerNestedInput
+  operatorMemberships?: Prisma.OperatorMemberUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -357,6 +408,7 @@ export type UserCreateManyInput = {
   image?: string | null
   phone?: string | null
   role?: $Enums.UserRole
+  active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -369,6 +421,7 @@ export type UserUpdateManyMutationInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -381,6 +434,7 @@ export type UserUncheckedUpdateManyInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -393,6 +447,7 @@ export type UserCountOrderByAggregateInput = {
   image?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   role?: Prisma.SortOrder
+  active?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -405,6 +460,7 @@ export type UserMaxOrderByAggregateInput = {
   image?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   role?: Prisma.SortOrder
+  active?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -417,6 +473,7 @@ export type UserMinOrderByAggregateInput = {
   image?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   role?: Prisma.SortOrder
+  active?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -501,12 +558,88 @@ export type UserCreateNestedOneWithoutBookingsInput = {
   connect?: Prisma.UserWhereUniqueInput
 }
 
-export type UserUpdateOneRequiredWithoutBookingsNestedInput = {
+export type UserUpdateOneWithoutBookingsNestedInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutBookingsInput, Prisma.UserUncheckedCreateWithoutBookingsInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutBookingsInput
   upsert?: Prisma.UserUpsertWithoutBookingsInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
   connect?: Prisma.UserWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutBookingsInput, Prisma.UserUpdateWithoutBookingsInput>, Prisma.UserUncheckedUpdateWithoutBookingsInput>
+}
+
+export type UserCreateNestedOneWithoutCarListingsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutCarListingsInput, Prisma.UserUncheckedCreateWithoutCarListingsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutCarListingsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutCarListingsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutCarListingsInput, Prisma.UserUncheckedCreateWithoutCarListingsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutCarListingsInput
+  upsert?: Prisma.UserUpsertWithoutCarListingsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutCarListingsInput, Prisma.UserUpdateWithoutCarListingsInput>, Prisma.UserUncheckedUpdateWithoutCarListingsInput>
+}
+
+export type UserCreateNestedOneWithoutApplicationsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutApplicationsInput, Prisma.UserUncheckedCreateWithoutApplicationsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutApplicationsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutApplicationsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutApplicationsInput, Prisma.UserUncheckedCreateWithoutApplicationsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutApplicationsInput
+  upsert?: Prisma.UserUpsertWithoutApplicationsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutApplicationsInput, Prisma.UserUpdateWithoutApplicationsInput>, Prisma.UserUncheckedUpdateWithoutApplicationsInput>
+}
+
+export type UserCreateNestedOneWithoutSentBookingMessagesInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutSentBookingMessagesInput, Prisma.UserUncheckedCreateWithoutSentBookingMessagesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutSentBookingMessagesInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneWithoutSentBookingMessagesNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutSentBookingMessagesInput, Prisma.UserUncheckedCreateWithoutSentBookingMessagesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutSentBookingMessagesInput
+  upsert?: Prisma.UserUpsertWithoutSentBookingMessagesInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutSentBookingMessagesInput, Prisma.UserUpdateWithoutSentBookingMessagesInput>, Prisma.UserUncheckedUpdateWithoutSentBookingMessagesInput>
+}
+
+export type UserCreateNestedOneWithoutCarHireRequestsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutCarHireRequestsInput, Prisma.UserUncheckedCreateWithoutCarHireRequestsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutCarHireRequestsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneWithoutCarHireRequestsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutCarHireRequestsInput, Prisma.UserUncheckedCreateWithoutCarHireRequestsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutCarHireRequestsInput
+  upsert?: Prisma.UserUpsertWithoutCarHireRequestsInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutCarHireRequestsInput, Prisma.UserUpdateWithoutCarHireRequestsInput>, Prisma.UserUncheckedUpdateWithoutCarHireRequestsInput>
+}
+
+export type UserCreateNestedOneWithoutOperatorMembershipsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutOperatorMembershipsInput, Prisma.UserUncheckedCreateWithoutOperatorMembershipsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutOperatorMembershipsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutOperatorMembershipsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutOperatorMembershipsInput, Prisma.UserUncheckedCreateWithoutOperatorMembershipsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutOperatorMembershipsInput
+  upsert?: Prisma.UserUpsertWithoutOperatorMembershipsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutOperatorMembershipsInput, Prisma.UserUpdateWithoutOperatorMembershipsInput>, Prisma.UserUncheckedUpdateWithoutOperatorMembershipsInput>
 }
 
 export type UserCreateWithoutSessionsInput = {
@@ -517,11 +650,17 @@ export type UserCreateWithoutSessionsInput = {
   image?: string | null
   phone?: string | null
   role?: $Enums.UserRole
+  active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
   operators?: Prisma.OperatorCreateNestedManyWithoutOwnerInput
   bookings?: Prisma.BookingCreateNestedManyWithoutUserInput
+  carListings?: Prisma.CarHireListingCreateNestedManyWithoutOwnerInput
+  applications?: Prisma.ApplicationCreateNestedManyWithoutUserInput
+  sentBookingMessages?: Prisma.BookingMessageCreateNestedManyWithoutSenderInput
+  carHireRequests?: Prisma.CarHireRequestCreateNestedManyWithoutPassengerInput
+  operatorMemberships?: Prisma.OperatorMemberCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutSessionsInput = {
@@ -532,11 +671,17 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   image?: string | null
   phone?: string | null
   role?: $Enums.UserRole
+  active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
   operators?: Prisma.OperatorUncheckedCreateNestedManyWithoutOwnerInput
   bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutUserInput
+  carListings?: Prisma.CarHireListingUncheckedCreateNestedManyWithoutOwnerInput
+  applications?: Prisma.ApplicationUncheckedCreateNestedManyWithoutUserInput
+  sentBookingMessages?: Prisma.BookingMessageUncheckedCreateNestedManyWithoutSenderInput
+  carHireRequests?: Prisma.CarHireRequestUncheckedCreateNestedManyWithoutPassengerInput
+  operatorMemberships?: Prisma.OperatorMemberUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutSessionsInput = {
@@ -563,11 +708,17 @@ export type UserUpdateWithoutSessionsInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
   operators?: Prisma.OperatorUpdateManyWithoutOwnerNestedInput
   bookings?: Prisma.BookingUpdateManyWithoutUserNestedInput
+  carListings?: Prisma.CarHireListingUpdateManyWithoutOwnerNestedInput
+  applications?: Prisma.ApplicationUpdateManyWithoutUserNestedInput
+  sentBookingMessages?: Prisma.BookingMessageUpdateManyWithoutSenderNestedInput
+  carHireRequests?: Prisma.CarHireRequestUpdateManyWithoutPassengerNestedInput
+  operatorMemberships?: Prisma.OperatorMemberUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSessionsInput = {
@@ -578,11 +729,17 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
   operators?: Prisma.OperatorUncheckedUpdateManyWithoutOwnerNestedInput
   bookings?: Prisma.BookingUncheckedUpdateManyWithoutUserNestedInput
+  carListings?: Prisma.CarHireListingUncheckedUpdateManyWithoutOwnerNestedInput
+  applications?: Prisma.ApplicationUncheckedUpdateManyWithoutUserNestedInput
+  sentBookingMessages?: Prisma.BookingMessageUncheckedUpdateManyWithoutSenderNestedInput
+  carHireRequests?: Prisma.CarHireRequestUncheckedUpdateManyWithoutPassengerNestedInput
+  operatorMemberships?: Prisma.OperatorMemberUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutAccountsInput = {
@@ -593,11 +750,17 @@ export type UserCreateWithoutAccountsInput = {
   image?: string | null
   phone?: string | null
   role?: $Enums.UserRole
+  active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   operators?: Prisma.OperatorCreateNestedManyWithoutOwnerInput
   bookings?: Prisma.BookingCreateNestedManyWithoutUserInput
+  carListings?: Prisma.CarHireListingCreateNestedManyWithoutOwnerInput
+  applications?: Prisma.ApplicationCreateNestedManyWithoutUserInput
+  sentBookingMessages?: Prisma.BookingMessageCreateNestedManyWithoutSenderInput
+  carHireRequests?: Prisma.CarHireRequestCreateNestedManyWithoutPassengerInput
+  operatorMemberships?: Prisma.OperatorMemberCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutAccountsInput = {
@@ -608,11 +771,17 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   image?: string | null
   phone?: string | null
   role?: $Enums.UserRole
+  active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   operators?: Prisma.OperatorUncheckedCreateNestedManyWithoutOwnerInput
   bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutUserInput
+  carListings?: Prisma.CarHireListingUncheckedCreateNestedManyWithoutOwnerInput
+  applications?: Prisma.ApplicationUncheckedCreateNestedManyWithoutUserInput
+  sentBookingMessages?: Prisma.BookingMessageUncheckedCreateNestedManyWithoutSenderInput
+  carHireRequests?: Prisma.CarHireRequestUncheckedCreateNestedManyWithoutPassengerInput
+  operatorMemberships?: Prisma.OperatorMemberUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutAccountsInput = {
@@ -639,11 +808,17 @@ export type UserUpdateWithoutAccountsInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   operators?: Prisma.OperatorUpdateManyWithoutOwnerNestedInput
   bookings?: Prisma.BookingUpdateManyWithoutUserNestedInput
+  carListings?: Prisma.CarHireListingUpdateManyWithoutOwnerNestedInput
+  applications?: Prisma.ApplicationUpdateManyWithoutUserNestedInput
+  sentBookingMessages?: Prisma.BookingMessageUpdateManyWithoutSenderNestedInput
+  carHireRequests?: Prisma.CarHireRequestUpdateManyWithoutPassengerNestedInput
+  operatorMemberships?: Prisma.OperatorMemberUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAccountsInput = {
@@ -654,11 +829,17 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   operators?: Prisma.OperatorUncheckedUpdateManyWithoutOwnerNestedInput
   bookings?: Prisma.BookingUncheckedUpdateManyWithoutUserNestedInput
+  carListings?: Prisma.CarHireListingUncheckedUpdateManyWithoutOwnerNestedInput
+  applications?: Prisma.ApplicationUncheckedUpdateManyWithoutUserNestedInput
+  sentBookingMessages?: Prisma.BookingMessageUncheckedUpdateManyWithoutSenderNestedInput
+  carHireRequests?: Prisma.CarHireRequestUncheckedUpdateManyWithoutPassengerNestedInput
+  operatorMemberships?: Prisma.OperatorMemberUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutOperatorsInput = {
@@ -669,11 +850,17 @@ export type UserCreateWithoutOperatorsInput = {
   image?: string | null
   phone?: string | null
   role?: $Enums.UserRole
+  active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
   bookings?: Prisma.BookingCreateNestedManyWithoutUserInput
+  carListings?: Prisma.CarHireListingCreateNestedManyWithoutOwnerInput
+  applications?: Prisma.ApplicationCreateNestedManyWithoutUserInput
+  sentBookingMessages?: Prisma.BookingMessageCreateNestedManyWithoutSenderInput
+  carHireRequests?: Prisma.CarHireRequestCreateNestedManyWithoutPassengerInput
+  operatorMemberships?: Prisma.OperatorMemberCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutOperatorsInput = {
@@ -684,11 +871,17 @@ export type UserUncheckedCreateWithoutOperatorsInput = {
   image?: string | null
   phone?: string | null
   role?: $Enums.UserRole
+  active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
   bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutUserInput
+  carListings?: Prisma.CarHireListingUncheckedCreateNestedManyWithoutOwnerInput
+  applications?: Prisma.ApplicationUncheckedCreateNestedManyWithoutUserInput
+  sentBookingMessages?: Prisma.BookingMessageUncheckedCreateNestedManyWithoutSenderInput
+  carHireRequests?: Prisma.CarHireRequestUncheckedCreateNestedManyWithoutPassengerInput
+  operatorMemberships?: Prisma.OperatorMemberUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutOperatorsInput = {
@@ -715,11 +908,17 @@ export type UserUpdateWithoutOperatorsInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
   bookings?: Prisma.BookingUpdateManyWithoutUserNestedInput
+  carListings?: Prisma.CarHireListingUpdateManyWithoutOwnerNestedInput
+  applications?: Prisma.ApplicationUpdateManyWithoutUserNestedInput
+  sentBookingMessages?: Prisma.BookingMessageUpdateManyWithoutSenderNestedInput
+  carHireRequests?: Prisma.CarHireRequestUpdateManyWithoutPassengerNestedInput
+  operatorMemberships?: Prisma.OperatorMemberUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutOperatorsInput = {
@@ -730,11 +929,17 @@ export type UserUncheckedUpdateWithoutOperatorsInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
   bookings?: Prisma.BookingUncheckedUpdateManyWithoutUserNestedInput
+  carListings?: Prisma.CarHireListingUncheckedUpdateManyWithoutOwnerNestedInput
+  applications?: Prisma.ApplicationUncheckedUpdateManyWithoutUserNestedInput
+  sentBookingMessages?: Prisma.BookingMessageUncheckedUpdateManyWithoutSenderNestedInput
+  carHireRequests?: Prisma.CarHireRequestUncheckedUpdateManyWithoutPassengerNestedInput
+  operatorMemberships?: Prisma.OperatorMemberUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutBookingsInput = {
@@ -745,11 +950,17 @@ export type UserCreateWithoutBookingsInput = {
   image?: string | null
   phone?: string | null
   role?: $Enums.UserRole
+  active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
   accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
   operators?: Prisma.OperatorCreateNestedManyWithoutOwnerInput
+  carListings?: Prisma.CarHireListingCreateNestedManyWithoutOwnerInput
+  applications?: Prisma.ApplicationCreateNestedManyWithoutUserInput
+  sentBookingMessages?: Prisma.BookingMessageCreateNestedManyWithoutSenderInput
+  carHireRequests?: Prisma.CarHireRequestCreateNestedManyWithoutPassengerInput
+  operatorMemberships?: Prisma.OperatorMemberCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutBookingsInput = {
@@ -760,11 +971,17 @@ export type UserUncheckedCreateWithoutBookingsInput = {
   image?: string | null
   phone?: string | null
   role?: $Enums.UserRole
+  active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
   accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
   operators?: Prisma.OperatorUncheckedCreateNestedManyWithoutOwnerInput
+  carListings?: Prisma.CarHireListingUncheckedCreateNestedManyWithoutOwnerInput
+  applications?: Prisma.ApplicationUncheckedCreateNestedManyWithoutUserInput
+  sentBookingMessages?: Prisma.BookingMessageUncheckedCreateNestedManyWithoutSenderInput
+  carHireRequests?: Prisma.CarHireRequestUncheckedCreateNestedManyWithoutPassengerInput
+  operatorMemberships?: Prisma.OperatorMemberUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutBookingsInput = {
@@ -791,11 +1008,17 @@ export type UserUpdateWithoutBookingsInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
   accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
   operators?: Prisma.OperatorUpdateManyWithoutOwnerNestedInput
+  carListings?: Prisma.CarHireListingUpdateManyWithoutOwnerNestedInput
+  applications?: Prisma.ApplicationUpdateManyWithoutUserNestedInput
+  sentBookingMessages?: Prisma.BookingMessageUpdateManyWithoutSenderNestedInput
+  carHireRequests?: Prisma.CarHireRequestUpdateManyWithoutPassengerNestedInput
+  operatorMemberships?: Prisma.OperatorMemberUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutBookingsInput = {
@@ -806,11 +1029,517 @@ export type UserUncheckedUpdateWithoutBookingsInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
   accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
   operators?: Prisma.OperatorUncheckedUpdateManyWithoutOwnerNestedInput
+  carListings?: Prisma.CarHireListingUncheckedUpdateManyWithoutOwnerNestedInput
+  applications?: Prisma.ApplicationUncheckedUpdateManyWithoutUserNestedInput
+  sentBookingMessages?: Prisma.BookingMessageUncheckedUpdateManyWithoutSenderNestedInput
+  carHireRequests?: Prisma.CarHireRequestUncheckedUpdateManyWithoutPassengerNestedInput
+  operatorMemberships?: Prisma.OperatorMemberUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutCarListingsInput = {
+  id?: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  phone?: string | null
+  role?: $Enums.UserRole
+  active?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  operators?: Prisma.OperatorCreateNestedManyWithoutOwnerInput
+  bookings?: Prisma.BookingCreateNestedManyWithoutUserInput
+  applications?: Prisma.ApplicationCreateNestedManyWithoutUserInput
+  sentBookingMessages?: Prisma.BookingMessageCreateNestedManyWithoutSenderInput
+  carHireRequests?: Prisma.CarHireRequestCreateNestedManyWithoutPassengerInput
+  operatorMemberships?: Prisma.OperatorMemberCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutCarListingsInput = {
+  id?: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  phone?: string | null
+  role?: $Enums.UserRole
+  active?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  operators?: Prisma.OperatorUncheckedCreateNestedManyWithoutOwnerInput
+  bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutUserInput
+  applications?: Prisma.ApplicationUncheckedCreateNestedManyWithoutUserInput
+  sentBookingMessages?: Prisma.BookingMessageUncheckedCreateNestedManyWithoutSenderInput
+  carHireRequests?: Prisma.CarHireRequestUncheckedCreateNestedManyWithoutPassengerInput
+  operatorMemberships?: Prisma.OperatorMemberUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutCarListingsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutCarListingsInput, Prisma.UserUncheckedCreateWithoutCarListingsInput>
+}
+
+export type UserUpsertWithoutCarListingsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutCarListingsInput, Prisma.UserUncheckedUpdateWithoutCarListingsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutCarListingsInput, Prisma.UserUncheckedCreateWithoutCarListingsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutCarListingsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutCarListingsInput, Prisma.UserUncheckedUpdateWithoutCarListingsInput>
+}
+
+export type UserUpdateWithoutCarListingsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  operators?: Prisma.OperatorUpdateManyWithoutOwnerNestedInput
+  bookings?: Prisma.BookingUpdateManyWithoutUserNestedInput
+  applications?: Prisma.ApplicationUpdateManyWithoutUserNestedInput
+  sentBookingMessages?: Prisma.BookingMessageUpdateManyWithoutSenderNestedInput
+  carHireRequests?: Prisma.CarHireRequestUpdateManyWithoutPassengerNestedInput
+  operatorMemberships?: Prisma.OperatorMemberUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutCarListingsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  operators?: Prisma.OperatorUncheckedUpdateManyWithoutOwnerNestedInput
+  bookings?: Prisma.BookingUncheckedUpdateManyWithoutUserNestedInput
+  applications?: Prisma.ApplicationUncheckedUpdateManyWithoutUserNestedInput
+  sentBookingMessages?: Prisma.BookingMessageUncheckedUpdateManyWithoutSenderNestedInput
+  carHireRequests?: Prisma.CarHireRequestUncheckedUpdateManyWithoutPassengerNestedInput
+  operatorMemberships?: Prisma.OperatorMemberUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutApplicationsInput = {
+  id?: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  phone?: string | null
+  role?: $Enums.UserRole
+  active?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  operators?: Prisma.OperatorCreateNestedManyWithoutOwnerInput
+  bookings?: Prisma.BookingCreateNestedManyWithoutUserInput
+  carListings?: Prisma.CarHireListingCreateNestedManyWithoutOwnerInput
+  sentBookingMessages?: Prisma.BookingMessageCreateNestedManyWithoutSenderInput
+  carHireRequests?: Prisma.CarHireRequestCreateNestedManyWithoutPassengerInput
+  operatorMemberships?: Prisma.OperatorMemberCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutApplicationsInput = {
+  id?: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  phone?: string | null
+  role?: $Enums.UserRole
+  active?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  operators?: Prisma.OperatorUncheckedCreateNestedManyWithoutOwnerInput
+  bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutUserInput
+  carListings?: Prisma.CarHireListingUncheckedCreateNestedManyWithoutOwnerInput
+  sentBookingMessages?: Prisma.BookingMessageUncheckedCreateNestedManyWithoutSenderInput
+  carHireRequests?: Prisma.CarHireRequestUncheckedCreateNestedManyWithoutPassengerInput
+  operatorMemberships?: Prisma.OperatorMemberUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutApplicationsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutApplicationsInput, Prisma.UserUncheckedCreateWithoutApplicationsInput>
+}
+
+export type UserUpsertWithoutApplicationsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutApplicationsInput, Prisma.UserUncheckedUpdateWithoutApplicationsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutApplicationsInput, Prisma.UserUncheckedCreateWithoutApplicationsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutApplicationsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutApplicationsInput, Prisma.UserUncheckedUpdateWithoutApplicationsInput>
+}
+
+export type UserUpdateWithoutApplicationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  operators?: Prisma.OperatorUpdateManyWithoutOwnerNestedInput
+  bookings?: Prisma.BookingUpdateManyWithoutUserNestedInput
+  carListings?: Prisma.CarHireListingUpdateManyWithoutOwnerNestedInput
+  sentBookingMessages?: Prisma.BookingMessageUpdateManyWithoutSenderNestedInput
+  carHireRequests?: Prisma.CarHireRequestUpdateManyWithoutPassengerNestedInput
+  operatorMemberships?: Prisma.OperatorMemberUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutApplicationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  operators?: Prisma.OperatorUncheckedUpdateManyWithoutOwnerNestedInput
+  bookings?: Prisma.BookingUncheckedUpdateManyWithoutUserNestedInput
+  carListings?: Prisma.CarHireListingUncheckedUpdateManyWithoutOwnerNestedInput
+  sentBookingMessages?: Prisma.BookingMessageUncheckedUpdateManyWithoutSenderNestedInput
+  carHireRequests?: Prisma.CarHireRequestUncheckedUpdateManyWithoutPassengerNestedInput
+  operatorMemberships?: Prisma.OperatorMemberUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutSentBookingMessagesInput = {
+  id?: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  phone?: string | null
+  role?: $Enums.UserRole
+  active?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  operators?: Prisma.OperatorCreateNestedManyWithoutOwnerInput
+  bookings?: Prisma.BookingCreateNestedManyWithoutUserInput
+  carListings?: Prisma.CarHireListingCreateNestedManyWithoutOwnerInput
+  applications?: Prisma.ApplicationCreateNestedManyWithoutUserInput
+  carHireRequests?: Prisma.CarHireRequestCreateNestedManyWithoutPassengerInput
+  operatorMemberships?: Prisma.OperatorMemberCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutSentBookingMessagesInput = {
+  id?: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  phone?: string | null
+  role?: $Enums.UserRole
+  active?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  operators?: Prisma.OperatorUncheckedCreateNestedManyWithoutOwnerInput
+  bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutUserInput
+  carListings?: Prisma.CarHireListingUncheckedCreateNestedManyWithoutOwnerInput
+  applications?: Prisma.ApplicationUncheckedCreateNestedManyWithoutUserInput
+  carHireRequests?: Prisma.CarHireRequestUncheckedCreateNestedManyWithoutPassengerInput
+  operatorMemberships?: Prisma.OperatorMemberUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutSentBookingMessagesInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutSentBookingMessagesInput, Prisma.UserUncheckedCreateWithoutSentBookingMessagesInput>
+}
+
+export type UserUpsertWithoutSentBookingMessagesInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutSentBookingMessagesInput, Prisma.UserUncheckedUpdateWithoutSentBookingMessagesInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutSentBookingMessagesInput, Prisma.UserUncheckedCreateWithoutSentBookingMessagesInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutSentBookingMessagesInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutSentBookingMessagesInput, Prisma.UserUncheckedUpdateWithoutSentBookingMessagesInput>
+}
+
+export type UserUpdateWithoutSentBookingMessagesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  operators?: Prisma.OperatorUpdateManyWithoutOwnerNestedInput
+  bookings?: Prisma.BookingUpdateManyWithoutUserNestedInput
+  carListings?: Prisma.CarHireListingUpdateManyWithoutOwnerNestedInput
+  applications?: Prisma.ApplicationUpdateManyWithoutUserNestedInput
+  carHireRequests?: Prisma.CarHireRequestUpdateManyWithoutPassengerNestedInput
+  operatorMemberships?: Prisma.OperatorMemberUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutSentBookingMessagesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  operators?: Prisma.OperatorUncheckedUpdateManyWithoutOwnerNestedInput
+  bookings?: Prisma.BookingUncheckedUpdateManyWithoutUserNestedInput
+  carListings?: Prisma.CarHireListingUncheckedUpdateManyWithoutOwnerNestedInput
+  applications?: Prisma.ApplicationUncheckedUpdateManyWithoutUserNestedInput
+  carHireRequests?: Prisma.CarHireRequestUncheckedUpdateManyWithoutPassengerNestedInput
+  operatorMemberships?: Prisma.OperatorMemberUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutCarHireRequestsInput = {
+  id?: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  phone?: string | null
+  role?: $Enums.UserRole
+  active?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  operators?: Prisma.OperatorCreateNestedManyWithoutOwnerInput
+  bookings?: Prisma.BookingCreateNestedManyWithoutUserInput
+  carListings?: Prisma.CarHireListingCreateNestedManyWithoutOwnerInput
+  applications?: Prisma.ApplicationCreateNestedManyWithoutUserInput
+  sentBookingMessages?: Prisma.BookingMessageCreateNestedManyWithoutSenderInput
+  operatorMemberships?: Prisma.OperatorMemberCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutCarHireRequestsInput = {
+  id?: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  phone?: string | null
+  role?: $Enums.UserRole
+  active?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  operators?: Prisma.OperatorUncheckedCreateNestedManyWithoutOwnerInput
+  bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutUserInput
+  carListings?: Prisma.CarHireListingUncheckedCreateNestedManyWithoutOwnerInput
+  applications?: Prisma.ApplicationUncheckedCreateNestedManyWithoutUserInput
+  sentBookingMessages?: Prisma.BookingMessageUncheckedCreateNestedManyWithoutSenderInput
+  operatorMemberships?: Prisma.OperatorMemberUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutCarHireRequestsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutCarHireRequestsInput, Prisma.UserUncheckedCreateWithoutCarHireRequestsInput>
+}
+
+export type UserUpsertWithoutCarHireRequestsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutCarHireRequestsInput, Prisma.UserUncheckedUpdateWithoutCarHireRequestsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutCarHireRequestsInput, Prisma.UserUncheckedCreateWithoutCarHireRequestsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutCarHireRequestsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutCarHireRequestsInput, Prisma.UserUncheckedUpdateWithoutCarHireRequestsInput>
+}
+
+export type UserUpdateWithoutCarHireRequestsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  operators?: Prisma.OperatorUpdateManyWithoutOwnerNestedInput
+  bookings?: Prisma.BookingUpdateManyWithoutUserNestedInput
+  carListings?: Prisma.CarHireListingUpdateManyWithoutOwnerNestedInput
+  applications?: Prisma.ApplicationUpdateManyWithoutUserNestedInput
+  sentBookingMessages?: Prisma.BookingMessageUpdateManyWithoutSenderNestedInput
+  operatorMemberships?: Prisma.OperatorMemberUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutCarHireRequestsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  operators?: Prisma.OperatorUncheckedUpdateManyWithoutOwnerNestedInput
+  bookings?: Prisma.BookingUncheckedUpdateManyWithoutUserNestedInput
+  carListings?: Prisma.CarHireListingUncheckedUpdateManyWithoutOwnerNestedInput
+  applications?: Prisma.ApplicationUncheckedUpdateManyWithoutUserNestedInput
+  sentBookingMessages?: Prisma.BookingMessageUncheckedUpdateManyWithoutSenderNestedInput
+  operatorMemberships?: Prisma.OperatorMemberUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutOperatorMembershipsInput = {
+  id?: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  phone?: string | null
+  role?: $Enums.UserRole
+  active?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  operators?: Prisma.OperatorCreateNestedManyWithoutOwnerInput
+  bookings?: Prisma.BookingCreateNestedManyWithoutUserInput
+  carListings?: Prisma.CarHireListingCreateNestedManyWithoutOwnerInput
+  applications?: Prisma.ApplicationCreateNestedManyWithoutUserInput
+  sentBookingMessages?: Prisma.BookingMessageCreateNestedManyWithoutSenderInput
+  carHireRequests?: Prisma.CarHireRequestCreateNestedManyWithoutPassengerInput
+}
+
+export type UserUncheckedCreateWithoutOperatorMembershipsInput = {
+  id?: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  phone?: string | null
+  role?: $Enums.UserRole
+  active?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  operators?: Prisma.OperatorUncheckedCreateNestedManyWithoutOwnerInput
+  bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutUserInput
+  carListings?: Prisma.CarHireListingUncheckedCreateNestedManyWithoutOwnerInput
+  applications?: Prisma.ApplicationUncheckedCreateNestedManyWithoutUserInput
+  sentBookingMessages?: Prisma.BookingMessageUncheckedCreateNestedManyWithoutSenderInput
+  carHireRequests?: Prisma.CarHireRequestUncheckedCreateNestedManyWithoutPassengerInput
+}
+
+export type UserCreateOrConnectWithoutOperatorMembershipsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutOperatorMembershipsInput, Prisma.UserUncheckedCreateWithoutOperatorMembershipsInput>
+}
+
+export type UserUpsertWithoutOperatorMembershipsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutOperatorMembershipsInput, Prisma.UserUncheckedUpdateWithoutOperatorMembershipsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutOperatorMembershipsInput, Prisma.UserUncheckedCreateWithoutOperatorMembershipsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutOperatorMembershipsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutOperatorMembershipsInput, Prisma.UserUncheckedUpdateWithoutOperatorMembershipsInput>
+}
+
+export type UserUpdateWithoutOperatorMembershipsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  operators?: Prisma.OperatorUpdateManyWithoutOwnerNestedInput
+  bookings?: Prisma.BookingUpdateManyWithoutUserNestedInput
+  carListings?: Prisma.CarHireListingUpdateManyWithoutOwnerNestedInput
+  applications?: Prisma.ApplicationUpdateManyWithoutUserNestedInput
+  sentBookingMessages?: Prisma.BookingMessageUpdateManyWithoutSenderNestedInput
+  carHireRequests?: Prisma.CarHireRequestUpdateManyWithoutPassengerNestedInput
+}
+
+export type UserUncheckedUpdateWithoutOperatorMembershipsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  operators?: Prisma.OperatorUncheckedUpdateManyWithoutOwnerNestedInput
+  bookings?: Prisma.BookingUncheckedUpdateManyWithoutUserNestedInput
+  carListings?: Prisma.CarHireListingUncheckedUpdateManyWithoutOwnerNestedInput
+  applications?: Prisma.ApplicationUncheckedUpdateManyWithoutUserNestedInput
+  sentBookingMessages?: Prisma.BookingMessageUncheckedUpdateManyWithoutSenderNestedInput
+  carHireRequests?: Prisma.CarHireRequestUncheckedUpdateManyWithoutPassengerNestedInput
 }
 
 
@@ -823,6 +1552,11 @@ export type UserCountOutputType = {
   accounts: number
   operators: number
   bookings: number
+  carListings: number
+  applications: number
+  sentBookingMessages: number
+  carHireRequests: number
+  operatorMemberships: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -830,6 +1564,11 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   accounts?: boolean | UserCountOutputTypeCountAccountsArgs
   operators?: boolean | UserCountOutputTypeCountOperatorsArgs
   bookings?: boolean | UserCountOutputTypeCountBookingsArgs
+  carListings?: boolean | UserCountOutputTypeCountCarListingsArgs
+  applications?: boolean | UserCountOutputTypeCountApplicationsArgs
+  sentBookingMessages?: boolean | UserCountOutputTypeCountSentBookingMessagesArgs
+  carHireRequests?: boolean | UserCountOutputTypeCountCarHireRequestsArgs
+  operatorMemberships?: boolean | UserCountOutputTypeCountOperatorMembershipsArgs
 }
 
 /**
@@ -870,6 +1609,41 @@ export type UserCountOutputTypeCountBookingsArgs<ExtArgs extends runtime.Types.E
   where?: Prisma.BookingWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountCarListingsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CarHireListingWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountApplicationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ApplicationWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountSentBookingMessagesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.BookingMessageWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountCarHireRequestsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CarHireRequestWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountOperatorMembershipsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.OperatorMemberWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -879,12 +1653,18 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   image?: boolean
   phone?: boolean
   role?: boolean
+  active?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>
   accounts?: boolean | Prisma.User$accountsArgs<ExtArgs>
   operators?: boolean | Prisma.User$operatorsArgs<ExtArgs>
   bookings?: boolean | Prisma.User$bookingsArgs<ExtArgs>
+  carListings?: boolean | Prisma.User$carListingsArgs<ExtArgs>
+  applications?: boolean | Prisma.User$applicationsArgs<ExtArgs>
+  sentBookingMessages?: boolean | Prisma.User$sentBookingMessagesArgs<ExtArgs>
+  carHireRequests?: boolean | Prisma.User$carHireRequestsArgs<ExtArgs>
+  operatorMemberships?: boolean | Prisma.User$operatorMembershipsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -896,6 +1676,7 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   image?: boolean
   phone?: boolean
   role?: boolean
+  active?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["user"]>
@@ -908,6 +1689,7 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   image?: boolean
   phone?: boolean
   role?: boolean
+  active?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["user"]>
@@ -920,16 +1702,22 @@ export type UserSelectScalar = {
   image?: boolean
   phone?: boolean
   role?: boolean
+  active?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "emailVerified" | "image" | "phone" | "role" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "emailVerified" | "image" | "phone" | "role" | "active" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>
   accounts?: boolean | Prisma.User$accountsArgs<ExtArgs>
   operators?: boolean | Prisma.User$operatorsArgs<ExtArgs>
   bookings?: boolean | Prisma.User$bookingsArgs<ExtArgs>
+  carListings?: boolean | Prisma.User$carListingsArgs<ExtArgs>
+  applications?: boolean | Prisma.User$applicationsArgs<ExtArgs>
+  sentBookingMessages?: boolean | Prisma.User$sentBookingMessagesArgs<ExtArgs>
+  carHireRequests?: boolean | Prisma.User$carHireRequestsArgs<ExtArgs>
+  operatorMemberships?: boolean | Prisma.User$operatorMembershipsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -942,6 +1730,11 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     accounts: Prisma.$AccountPayload<ExtArgs>[]
     operators: Prisma.$OperatorPayload<ExtArgs>[]
     bookings: Prisma.$BookingPayload<ExtArgs>[]
+    carListings: Prisma.$CarHireListingPayload<ExtArgs>[]
+    applications: Prisma.$ApplicationPayload<ExtArgs>[]
+    sentBookingMessages: Prisma.$BookingMessagePayload<ExtArgs>[]
+    carHireRequests: Prisma.$CarHireRequestPayload<ExtArgs>[]
+    operatorMemberships: Prisma.$OperatorMemberPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -951,6 +1744,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     image: string | null
     phone: string | null
     role: $Enums.UserRole
+    active: boolean
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["user"]>
@@ -1351,6 +2145,11 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   accounts<T extends Prisma.User$accountsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$accountsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AccountPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   operators<T extends Prisma.User$operatorsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$operatorsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OperatorPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   bookings<T extends Prisma.User$bookingsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$bookingsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  carListings<T extends Prisma.User$carListingsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$carListingsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CarHireListingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  applications<T extends Prisma.User$applicationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$applicationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ApplicationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  sentBookingMessages<T extends Prisma.User$sentBookingMessagesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$sentBookingMessagesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookingMessagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  carHireRequests<T extends Prisma.User$carHireRequestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$carHireRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CarHireRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  operatorMemberships<T extends Prisma.User$operatorMembershipsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$operatorMembershipsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OperatorMemberPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1387,6 +2186,7 @@ export interface UserFieldRefs {
   readonly image: Prisma.FieldRef<"User", 'String'>
   readonly phone: Prisma.FieldRef<"User", 'String'>
   readonly role: Prisma.FieldRef<"User", 'UserRole'>
+  readonly active: Prisma.FieldRef<"User", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"User", 'DateTime'>
 }
@@ -1875,6 +2675,126 @@ export type User$bookingsArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   take?: number
   skip?: number
   distinct?: Prisma.BookingScalarFieldEnum | Prisma.BookingScalarFieldEnum[]
+}
+
+/**
+ * User.carListings
+ */
+export type User$carListingsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CarHireListing
+   */
+  select?: Prisma.CarHireListingSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CarHireListing
+   */
+  omit?: Prisma.CarHireListingOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CarHireListingInclude<ExtArgs> | null
+  where?: Prisma.CarHireListingWhereInput
+  orderBy?: Prisma.CarHireListingOrderByWithRelationInput | Prisma.CarHireListingOrderByWithRelationInput[]
+  cursor?: Prisma.CarHireListingWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CarHireListingScalarFieldEnum | Prisma.CarHireListingScalarFieldEnum[]
+}
+
+/**
+ * User.applications
+ */
+export type User$applicationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Application
+   */
+  select?: Prisma.ApplicationSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Application
+   */
+  omit?: Prisma.ApplicationOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ApplicationInclude<ExtArgs> | null
+  where?: Prisma.ApplicationWhereInput
+  orderBy?: Prisma.ApplicationOrderByWithRelationInput | Prisma.ApplicationOrderByWithRelationInput[]
+  cursor?: Prisma.ApplicationWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ApplicationScalarFieldEnum | Prisma.ApplicationScalarFieldEnum[]
+}
+
+/**
+ * User.sentBookingMessages
+ */
+export type User$sentBookingMessagesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the BookingMessage
+   */
+  select?: Prisma.BookingMessageSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the BookingMessage
+   */
+  omit?: Prisma.BookingMessageOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.BookingMessageInclude<ExtArgs> | null
+  where?: Prisma.BookingMessageWhereInput
+  orderBy?: Prisma.BookingMessageOrderByWithRelationInput | Prisma.BookingMessageOrderByWithRelationInput[]
+  cursor?: Prisma.BookingMessageWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.BookingMessageScalarFieldEnum | Prisma.BookingMessageScalarFieldEnum[]
+}
+
+/**
+ * User.carHireRequests
+ */
+export type User$carHireRequestsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CarHireRequest
+   */
+  select?: Prisma.CarHireRequestSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CarHireRequest
+   */
+  omit?: Prisma.CarHireRequestOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CarHireRequestInclude<ExtArgs> | null
+  where?: Prisma.CarHireRequestWhereInput
+  orderBy?: Prisma.CarHireRequestOrderByWithRelationInput | Prisma.CarHireRequestOrderByWithRelationInput[]
+  cursor?: Prisma.CarHireRequestWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CarHireRequestScalarFieldEnum | Prisma.CarHireRequestScalarFieldEnum[]
+}
+
+/**
+ * User.operatorMemberships
+ */
+export type User$operatorMembershipsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the OperatorMember
+   */
+  select?: Prisma.OperatorMemberSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the OperatorMember
+   */
+  omit?: Prisma.OperatorMemberOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.OperatorMemberInclude<ExtArgs> | null
+  where?: Prisma.OperatorMemberWhereInput
+  orderBy?: Prisma.OperatorMemberOrderByWithRelationInput | Prisma.OperatorMemberOrderByWithRelationInput[]
+  cursor?: Prisma.OperatorMemberWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.OperatorMemberScalarFieldEnum | Prisma.OperatorMemberScalarFieldEnum[]
 }
 
 /**

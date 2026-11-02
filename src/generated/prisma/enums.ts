@@ -45,6 +45,7 @@ export type DeparturePointKind = (typeof DeparturePointKind)[keyof typeof Depart
 export const UserRole = {
   CUSTOMER: 'CUSTOMER',
   OWNER: 'OWNER',
+  CAR_HIRER: 'CAR_HIRER',
   ADMIN: 'ADMIN'
 } as const
 
@@ -60,3 +61,63 @@ export const BookingStatus = {
 } as const
 
 export type BookingStatus = (typeof BookingStatus)[keyof typeof BookingStatus]
+
+
+export const ApplicationKind = {
+  TAXI_OWNER: 'TAXI_OWNER',
+  BUS_COMPANY: 'BUS_COMPANY',
+  CAR_HIRER: 'CAR_HIRER'
+} as const
+
+export type ApplicationKind = (typeof ApplicationKind)[keyof typeof ApplicationKind]
+
+
+export const ApplicationStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  DECLINED: 'DECLINED'
+} as const
+
+export type ApplicationStatus = (typeof ApplicationStatus)[keyof typeof ApplicationStatus]
+
+
+export const CarHireRequestStatus = {
+  PENDING: 'PENDING',
+  ACCEPTED: 'ACCEPTED',
+  DECLINED: 'DECLINED',
+  CANCELLED: 'CANCELLED'
+} as const
+
+export type CarHireRequestStatus = (typeof CarHireRequestStatus)[keyof typeof CarHireRequestStatus]
+
+
+export const CarHireVehicleType = {
+  SALOON: 'SALOON',
+  SUV: 'SUV',
+  PICKUP: 'PICKUP',
+  MINIBUS: 'MINIBUS',
+  BUS: 'BUS',
+  TRUCK: 'TRUCK',
+  LORRY: 'LORRY',
+  VAN: 'VAN',
+  OTHER: 'OTHER'
+} as const
+
+export type CarHireVehicleType = (typeof CarHireVehicleType)[keyof typeof CarHireVehicleType]
+
+
+export const EmailDeliveryStatus = {
+  PENDING: 'PENDING',
+  SENT: 'SENT',
+  FAILED: 'FAILED'
+} as const
+
+export type EmailDeliveryStatus = (typeof EmailDeliveryStatus)[keyof typeof EmailDeliveryStatus]
+
+
+export const OperatorMemberRole = {
+  ADMIN: 'ADMIN',
+  STAFF: 'STAFF'
+} as const
+
+export type OperatorMemberRole = (typeof OperatorMemberRole)[keyof typeof OperatorMemberRole]

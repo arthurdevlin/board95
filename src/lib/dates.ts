@@ -6,8 +6,11 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 // "2026-10-26" -> the start and end of that day in Malawi time.
 // Returns null for things like "2026-13-45" that aren't real dates.
 export function dayRange(date: string): { start: Date; end: Date } | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
   const start = new Date(`${date}T00:00:00+02:00`);
   if (Number.isNaN(start.getTime())) return null;
+  // JavaScript normalizes impossible dates such as February 31; reject them.
+  if (toMalawiDate(start) !== date) return null;
   return { start, end: new Date(start.getTime() + MS_PER_DAY) };
 }
 

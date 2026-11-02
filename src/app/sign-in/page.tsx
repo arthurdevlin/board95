@@ -12,5 +12,5 @@ export default async function SignInPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const { next } = await searchParams;
-  return <AuthForm mode="sign-in" next={next || "/account"} />;
+  return <AuthForm mode="sign-in" next={next || "/account"} googleEnabled={Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)} />;
 }

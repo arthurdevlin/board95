@@ -210,6 +210,7 @@ export type OperatorWhereInput = {
   vehicles?: Prisma.VehicleListRelationFilter
   trips?: Prisma.TripListRelationFilter
   departurePoints?: Prisma.DeparturePointListRelationFilter
+  members?: Prisma.OperatorMemberListRelationFilter
 }
 
 export type OperatorOrderByWithRelationInput = {
@@ -225,6 +226,7 @@ export type OperatorOrderByWithRelationInput = {
   vehicles?: Prisma.VehicleOrderByRelationAggregateInput
   trips?: Prisma.TripOrderByRelationAggregateInput
   departurePoints?: Prisma.DeparturePointOrderByRelationAggregateInput
+  members?: Prisma.OperatorMemberOrderByRelationAggregateInput
 }
 
 export type OperatorWhereUniqueInput = Prisma.AtLeast<{
@@ -243,6 +245,7 @@ export type OperatorWhereUniqueInput = Prisma.AtLeast<{
   vehicles?: Prisma.VehicleListRelationFilter
   trips?: Prisma.TripListRelationFilter
   departurePoints?: Prisma.DeparturePointListRelationFilter
+  members?: Prisma.OperatorMemberListRelationFilter
 }, "id">
 
 export type OperatorOrderByWithAggregationInput = {
@@ -285,6 +288,7 @@ export type OperatorCreateInput = {
   vehicles?: Prisma.VehicleCreateNestedManyWithoutOperatorInput
   trips?: Prisma.TripCreateNestedManyWithoutOperatorInput
   departurePoints?: Prisma.DeparturePointCreateNestedManyWithoutOperatorInput
+  members?: Prisma.OperatorMemberCreateNestedManyWithoutOperatorInput
 }
 
 export type OperatorUncheckedCreateInput = {
@@ -299,6 +303,7 @@ export type OperatorUncheckedCreateInput = {
   vehicles?: Prisma.VehicleUncheckedCreateNestedManyWithoutOperatorInput
   trips?: Prisma.TripUncheckedCreateNestedManyWithoutOperatorInput
   departurePoints?: Prisma.DeparturePointUncheckedCreateNestedManyWithoutOperatorInput
+  members?: Prisma.OperatorMemberUncheckedCreateNestedManyWithoutOperatorInput
 }
 
 export type OperatorUpdateInput = {
@@ -313,6 +318,7 @@ export type OperatorUpdateInput = {
   vehicles?: Prisma.VehicleUpdateManyWithoutOperatorNestedInput
   trips?: Prisma.TripUpdateManyWithoutOperatorNestedInput
   departurePoints?: Prisma.DeparturePointUpdateManyWithoutOperatorNestedInput
+  members?: Prisma.OperatorMemberUpdateManyWithoutOperatorNestedInput
 }
 
 export type OperatorUncheckedUpdateInput = {
@@ -327,6 +333,7 @@ export type OperatorUncheckedUpdateInput = {
   vehicles?: Prisma.VehicleUncheckedUpdateManyWithoutOperatorNestedInput
   trips?: Prisma.TripUncheckedUpdateManyWithoutOperatorNestedInput
   departurePoints?: Prisma.DeparturePointUncheckedUpdateManyWithoutOperatorNestedInput
+  members?: Prisma.OperatorMemberUncheckedUpdateManyWithoutOperatorNestedInput
 }
 
 export type OperatorCreateManyInput = {
@@ -504,6 +511,20 @@ export type OperatorUpdateOneRequiredWithoutTripsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.OperatorUpdateToOneWithWhereWithoutTripsInput, Prisma.OperatorUpdateWithoutTripsInput>, Prisma.OperatorUncheckedUpdateWithoutTripsInput>
 }
 
+export type OperatorCreateNestedOneWithoutMembersInput = {
+  create?: Prisma.XOR<Prisma.OperatorCreateWithoutMembersInput, Prisma.OperatorUncheckedCreateWithoutMembersInput>
+  connectOrCreate?: Prisma.OperatorCreateOrConnectWithoutMembersInput
+  connect?: Prisma.OperatorWhereUniqueInput
+}
+
+export type OperatorUpdateOneRequiredWithoutMembersNestedInput = {
+  create?: Prisma.XOR<Prisma.OperatorCreateWithoutMembersInput, Prisma.OperatorUncheckedCreateWithoutMembersInput>
+  connectOrCreate?: Prisma.OperatorCreateOrConnectWithoutMembersInput
+  upsert?: Prisma.OperatorUpsertWithoutMembersInput
+  connect?: Prisma.OperatorWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.OperatorUpdateToOneWithWhereWithoutMembersInput, Prisma.OperatorUpdateWithoutMembersInput>, Prisma.OperatorUncheckedUpdateWithoutMembersInput>
+}
+
 export type OperatorCreateWithoutOwnerInput = {
   id?: string
   name: string
@@ -515,6 +536,7 @@ export type OperatorCreateWithoutOwnerInput = {
   vehicles?: Prisma.VehicleCreateNestedManyWithoutOperatorInput
   trips?: Prisma.TripCreateNestedManyWithoutOperatorInput
   departurePoints?: Prisma.DeparturePointCreateNestedManyWithoutOperatorInput
+  members?: Prisma.OperatorMemberCreateNestedManyWithoutOperatorInput
 }
 
 export type OperatorUncheckedCreateWithoutOwnerInput = {
@@ -528,6 +550,7 @@ export type OperatorUncheckedCreateWithoutOwnerInput = {
   vehicles?: Prisma.VehicleUncheckedCreateNestedManyWithoutOperatorInput
   trips?: Prisma.TripUncheckedCreateNestedManyWithoutOperatorInput
   departurePoints?: Prisma.DeparturePointUncheckedCreateNestedManyWithoutOperatorInput
+  members?: Prisma.OperatorMemberUncheckedCreateNestedManyWithoutOperatorInput
 }
 
 export type OperatorCreateOrConnectWithoutOwnerInput = {
@@ -581,6 +604,7 @@ export type OperatorCreateWithoutVehiclesInput = {
   owner?: Prisma.UserCreateNestedOneWithoutOperatorsInput
   trips?: Prisma.TripCreateNestedManyWithoutOperatorInput
   departurePoints?: Prisma.DeparturePointCreateNestedManyWithoutOperatorInput
+  members?: Prisma.OperatorMemberCreateNestedManyWithoutOperatorInput
 }
 
 export type OperatorUncheckedCreateWithoutVehiclesInput = {
@@ -594,6 +618,7 @@ export type OperatorUncheckedCreateWithoutVehiclesInput = {
   createdAt?: Date | string
   trips?: Prisma.TripUncheckedCreateNestedManyWithoutOperatorInput
   departurePoints?: Prisma.DeparturePointUncheckedCreateNestedManyWithoutOperatorInput
+  members?: Prisma.OperatorMemberUncheckedCreateNestedManyWithoutOperatorInput
 }
 
 export type OperatorCreateOrConnectWithoutVehiclesInput = {
@@ -623,6 +648,7 @@ export type OperatorUpdateWithoutVehiclesInput = {
   owner?: Prisma.UserUpdateOneWithoutOperatorsNestedInput
   trips?: Prisma.TripUpdateManyWithoutOperatorNestedInput
   departurePoints?: Prisma.DeparturePointUpdateManyWithoutOperatorNestedInput
+  members?: Prisma.OperatorMemberUpdateManyWithoutOperatorNestedInput
 }
 
 export type OperatorUncheckedUpdateWithoutVehiclesInput = {
@@ -636,6 +662,7 @@ export type OperatorUncheckedUpdateWithoutVehiclesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trips?: Prisma.TripUncheckedUpdateManyWithoutOperatorNestedInput
   departurePoints?: Prisma.DeparturePointUncheckedUpdateManyWithoutOperatorNestedInput
+  members?: Prisma.OperatorMemberUncheckedUpdateManyWithoutOperatorNestedInput
 }
 
 export type OperatorCreateWithoutDeparturePointsInput = {
@@ -649,6 +676,7 @@ export type OperatorCreateWithoutDeparturePointsInput = {
   owner?: Prisma.UserCreateNestedOneWithoutOperatorsInput
   vehicles?: Prisma.VehicleCreateNestedManyWithoutOperatorInput
   trips?: Prisma.TripCreateNestedManyWithoutOperatorInput
+  members?: Prisma.OperatorMemberCreateNestedManyWithoutOperatorInput
 }
 
 export type OperatorUncheckedCreateWithoutDeparturePointsInput = {
@@ -662,6 +690,7 @@ export type OperatorUncheckedCreateWithoutDeparturePointsInput = {
   createdAt?: Date | string
   vehicles?: Prisma.VehicleUncheckedCreateNestedManyWithoutOperatorInput
   trips?: Prisma.TripUncheckedCreateNestedManyWithoutOperatorInput
+  members?: Prisma.OperatorMemberUncheckedCreateNestedManyWithoutOperatorInput
 }
 
 export type OperatorCreateOrConnectWithoutDeparturePointsInput = {
@@ -691,6 +720,7 @@ export type OperatorUpdateWithoutDeparturePointsInput = {
   owner?: Prisma.UserUpdateOneWithoutOperatorsNestedInput
   vehicles?: Prisma.VehicleUpdateManyWithoutOperatorNestedInput
   trips?: Prisma.TripUpdateManyWithoutOperatorNestedInput
+  members?: Prisma.OperatorMemberUpdateManyWithoutOperatorNestedInput
 }
 
 export type OperatorUncheckedUpdateWithoutDeparturePointsInput = {
@@ -704,6 +734,7 @@ export type OperatorUncheckedUpdateWithoutDeparturePointsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vehicles?: Prisma.VehicleUncheckedUpdateManyWithoutOperatorNestedInput
   trips?: Prisma.TripUncheckedUpdateManyWithoutOperatorNestedInput
+  members?: Prisma.OperatorMemberUncheckedUpdateManyWithoutOperatorNestedInput
 }
 
 export type OperatorCreateWithoutTripsInput = {
@@ -717,6 +748,7 @@ export type OperatorCreateWithoutTripsInput = {
   owner?: Prisma.UserCreateNestedOneWithoutOperatorsInput
   vehicles?: Prisma.VehicleCreateNestedManyWithoutOperatorInput
   departurePoints?: Prisma.DeparturePointCreateNestedManyWithoutOperatorInput
+  members?: Prisma.OperatorMemberCreateNestedManyWithoutOperatorInput
 }
 
 export type OperatorUncheckedCreateWithoutTripsInput = {
@@ -730,6 +762,7 @@ export type OperatorUncheckedCreateWithoutTripsInput = {
   createdAt?: Date | string
   vehicles?: Prisma.VehicleUncheckedCreateNestedManyWithoutOperatorInput
   departurePoints?: Prisma.DeparturePointUncheckedCreateNestedManyWithoutOperatorInput
+  members?: Prisma.OperatorMemberUncheckedCreateNestedManyWithoutOperatorInput
 }
 
 export type OperatorCreateOrConnectWithoutTripsInput = {
@@ -759,6 +792,7 @@ export type OperatorUpdateWithoutTripsInput = {
   owner?: Prisma.UserUpdateOneWithoutOperatorsNestedInput
   vehicles?: Prisma.VehicleUpdateManyWithoutOperatorNestedInput
   departurePoints?: Prisma.DeparturePointUpdateManyWithoutOperatorNestedInput
+  members?: Prisma.OperatorMemberUpdateManyWithoutOperatorNestedInput
 }
 
 export type OperatorUncheckedUpdateWithoutTripsInput = {
@@ -771,6 +805,79 @@ export type OperatorUncheckedUpdateWithoutTripsInput = {
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vehicles?: Prisma.VehicleUncheckedUpdateManyWithoutOperatorNestedInput
+  departurePoints?: Prisma.DeparturePointUncheckedUpdateManyWithoutOperatorNestedInput
+  members?: Prisma.OperatorMemberUncheckedUpdateManyWithoutOperatorNestedInput
+}
+
+export type OperatorCreateWithoutMembersInput = {
+  id?: string
+  name: string
+  kind: $Enums.OperatorKind
+  verified?: boolean
+  active?: boolean
+  phone?: string | null
+  createdAt?: Date | string
+  owner?: Prisma.UserCreateNestedOneWithoutOperatorsInput
+  vehicles?: Prisma.VehicleCreateNestedManyWithoutOperatorInput
+  trips?: Prisma.TripCreateNestedManyWithoutOperatorInput
+  departurePoints?: Prisma.DeparturePointCreateNestedManyWithoutOperatorInput
+}
+
+export type OperatorUncheckedCreateWithoutMembersInput = {
+  id?: string
+  name: string
+  kind: $Enums.OperatorKind
+  verified?: boolean
+  active?: boolean
+  phone?: string | null
+  ownerId?: string | null
+  createdAt?: Date | string
+  vehicles?: Prisma.VehicleUncheckedCreateNestedManyWithoutOperatorInput
+  trips?: Prisma.TripUncheckedCreateNestedManyWithoutOperatorInput
+  departurePoints?: Prisma.DeparturePointUncheckedCreateNestedManyWithoutOperatorInput
+}
+
+export type OperatorCreateOrConnectWithoutMembersInput = {
+  where: Prisma.OperatorWhereUniqueInput
+  create: Prisma.XOR<Prisma.OperatorCreateWithoutMembersInput, Prisma.OperatorUncheckedCreateWithoutMembersInput>
+}
+
+export type OperatorUpsertWithoutMembersInput = {
+  update: Prisma.XOR<Prisma.OperatorUpdateWithoutMembersInput, Prisma.OperatorUncheckedUpdateWithoutMembersInput>
+  create: Prisma.XOR<Prisma.OperatorCreateWithoutMembersInput, Prisma.OperatorUncheckedCreateWithoutMembersInput>
+  where?: Prisma.OperatorWhereInput
+}
+
+export type OperatorUpdateToOneWithWhereWithoutMembersInput = {
+  where?: Prisma.OperatorWhereInput
+  data: Prisma.XOR<Prisma.OperatorUpdateWithoutMembersInput, Prisma.OperatorUncheckedUpdateWithoutMembersInput>
+}
+
+export type OperatorUpdateWithoutMembersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumOperatorKindFieldUpdateOperationsInput | $Enums.OperatorKind
+  verified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  owner?: Prisma.UserUpdateOneWithoutOperatorsNestedInput
+  vehicles?: Prisma.VehicleUpdateManyWithoutOperatorNestedInput
+  trips?: Prisma.TripUpdateManyWithoutOperatorNestedInput
+  departurePoints?: Prisma.DeparturePointUpdateManyWithoutOperatorNestedInput
+}
+
+export type OperatorUncheckedUpdateWithoutMembersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumOperatorKindFieldUpdateOperationsInput | $Enums.OperatorKind
+  verified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  vehicles?: Prisma.VehicleUncheckedUpdateManyWithoutOperatorNestedInput
+  trips?: Prisma.TripUncheckedUpdateManyWithoutOperatorNestedInput
   departurePoints?: Prisma.DeparturePointUncheckedUpdateManyWithoutOperatorNestedInput
 }
 
@@ -795,6 +902,7 @@ export type OperatorUpdateWithoutOwnerInput = {
   vehicles?: Prisma.VehicleUpdateManyWithoutOperatorNestedInput
   trips?: Prisma.TripUpdateManyWithoutOperatorNestedInput
   departurePoints?: Prisma.DeparturePointUpdateManyWithoutOperatorNestedInput
+  members?: Prisma.OperatorMemberUpdateManyWithoutOperatorNestedInput
 }
 
 export type OperatorUncheckedUpdateWithoutOwnerInput = {
@@ -808,6 +916,7 @@ export type OperatorUncheckedUpdateWithoutOwnerInput = {
   vehicles?: Prisma.VehicleUncheckedUpdateManyWithoutOperatorNestedInput
   trips?: Prisma.TripUncheckedUpdateManyWithoutOperatorNestedInput
   departurePoints?: Prisma.DeparturePointUncheckedUpdateManyWithoutOperatorNestedInput
+  members?: Prisma.OperatorMemberUncheckedUpdateManyWithoutOperatorNestedInput
 }
 
 export type OperatorUncheckedUpdateManyWithoutOwnerInput = {
@@ -829,12 +938,14 @@ export type OperatorCountOutputType = {
   vehicles: number
   trips: number
   departurePoints: number
+  members: number
 }
 
 export type OperatorCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   vehicles?: boolean | OperatorCountOutputTypeCountVehiclesArgs
   trips?: boolean | OperatorCountOutputTypeCountTripsArgs
   departurePoints?: boolean | OperatorCountOutputTypeCountDeparturePointsArgs
+  members?: boolean | OperatorCountOutputTypeCountMembersArgs
 }
 
 /**
@@ -868,6 +979,13 @@ export type OperatorCountOutputTypeCountDeparturePointsArgs<ExtArgs extends runt
   where?: Prisma.DeparturePointWhereInput
 }
 
+/**
+ * OperatorCountOutputType without action
+ */
+export type OperatorCountOutputTypeCountMembersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.OperatorMemberWhereInput
+}
+
 
 export type OperatorSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -882,6 +1000,7 @@ export type OperatorSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   vehicles?: boolean | Prisma.Operator$vehiclesArgs<ExtArgs>
   trips?: boolean | Prisma.Operator$tripsArgs<ExtArgs>
   departurePoints?: boolean | Prisma.Operator$departurePointsArgs<ExtArgs>
+  members?: boolean | Prisma.Operator$membersArgs<ExtArgs>
   _count?: boolean | Prisma.OperatorCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["operator"]>
 
@@ -926,6 +1045,7 @@ export type OperatorInclude<ExtArgs extends runtime.Types.Extensions.InternalArg
   vehicles?: boolean | Prisma.Operator$vehiclesArgs<ExtArgs>
   trips?: boolean | Prisma.Operator$tripsArgs<ExtArgs>
   departurePoints?: boolean | Prisma.Operator$departurePointsArgs<ExtArgs>
+  members?: boolean | Prisma.Operator$membersArgs<ExtArgs>
   _count?: boolean | Prisma.OperatorCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type OperatorIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -942,6 +1062,7 @@ export type $OperatorPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     vehicles: Prisma.$VehiclePayload<ExtArgs>[]
     trips: Prisma.$TripPayload<ExtArgs>[]
     departurePoints: Prisma.$DeparturePointPayload<ExtArgs>[]
+    members: Prisma.$OperatorMemberPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1350,6 +1471,7 @@ export interface Prisma__OperatorClient<T, Null = never, ExtArgs extends runtime
   vehicles<T extends Prisma.Operator$vehiclesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Operator$vehiclesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VehiclePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   trips<T extends Prisma.Operator$tripsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Operator$tripsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TripPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   departurePoints<T extends Prisma.Operator$departurePointsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Operator$departurePointsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DeparturePointPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  members<T extends Prisma.Operator$membersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Operator$membersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OperatorMemberPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1876,6 +1998,30 @@ export type Operator$departurePointsArgs<ExtArgs extends runtime.Types.Extension
   take?: number
   skip?: number
   distinct?: Prisma.DeparturePointScalarFieldEnum | Prisma.DeparturePointScalarFieldEnum[]
+}
+
+/**
+ * Operator.members
+ */
+export type Operator$membersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the OperatorMember
+   */
+  select?: Prisma.OperatorMemberSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the OperatorMember
+   */
+  omit?: Prisma.OperatorMemberOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.OperatorMemberInclude<ExtArgs> | null
+  where?: Prisma.OperatorMemberWhereInput
+  orderBy?: Prisma.OperatorMemberOrderByWithRelationInput | Prisma.OperatorMemberOrderByWithRelationInput[]
+  cursor?: Prisma.OperatorMemberWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.OperatorMemberScalarFieldEnum | Prisma.OperatorMemberScalarFieldEnum[]
 }
 
 /**

@@ -1,27 +1,34 @@
 import { formatDate, formatMWK } from "@/lib/format";
 import type { TripListing } from "@/lib/trips";
+import BookingRequestForm from "@/components/BookingRequestForm";
 
 // Three clear levels, each with its own colour:
 // plenty left = green, running low = amber, none = red.
 function getAvailability(left: number, total: number, unit: string) {
-  if (left === 0) {
+  const safeTotal = Math.max(0, total);
+  const safeLeft = Math.min(safeTotal, Math.max(0, left));
+  if (safeLeft === 0) {
     return { label: "Full", tone: "is-full" };
   }
-  if (left <= 3) {
-    return { label: `Only ${left} ${unit} left`, tone: "is-low" };
+  if (safeLeft <= 3) {
+    return { label: `Only ${safeLeft} ${unit} left`, tone: "is-low" };
   }
-  return { label: `${left} of ${total} ${unit} left`, tone: "is-plenty" };
+  return { label: `${safeLeft} of ${safeTotal} ${unit} left`, tone: "is-plenty" };
 }
 
-export default function TripCard({ trip }: { trip: TripListing }) {
-  const soldOut = trip.seatsAvailable === 0;
+export default function TripCard({
+  trip,
+}: {
+  trip: TripListing;
+}) {
+  const soldOut = trip.seatsAvailable <= 0 || trip.seatsTotal <= 0;
   const isBus = trip.type === "bus";
   const unit = isBus ? "seats" : "spaces";
   const { operator } = trip;
   const availability = getAvailability(trip.seatsAvailable, trip.seatsTotal, unit);
 
   return (
-    <article className="rounded-xl border border-black/10 p-4 shadow-sm">
+    <article className="trip-card rounded-xl border border-black/10 p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-lg font-semibold">
@@ -42,6 +49,7 @@ export default function TripCard({ trip }: { trip: TripListing }) {
       </div>
 
       <p className="trip-point">{trip.departurePoint}</p>
+      <p className="field-hint">Posted {new Intl.DateTimeFormat("en-MW", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Blantyre" }).format(trip.createdAt)}</p>
 
       <details className="trip-disclosure">
         <summary>
@@ -102,11 +110,7 @@ export default function TripCard({ trip }: { trip: TripListing }) {
         </div>
       </details>
 
-      <div className="trip-cta">
-        <button type="button" className="btn btn-primary btn-block" disabled>
-          {soldOut ? "Full" : "Request a seat (coming soon)"}
-        </button>
-      </div>
+      <BookingRequestForm tripId={trip.id} pickupAvailable={trip.pickup.available} soldOut={soldOut} />
     </article>
   );
 }

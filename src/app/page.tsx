@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
-import SearchForm from "@/components/SearchForm";
+import HomeTripSearch from "@/components/HomeTripSearch";
 import TripCard from "@/components/TripCard";
 import TripCardSkeleton from "@/components/TripCardSkeleton";
 import { getUpcomingTrips } from "@/lib/trips";
@@ -16,9 +16,8 @@ export default function Home() {
           Find buses and taxis, see fares and available seats, and hire a car
           when you need one.
         </p>
-        <div>
-          <SearchForm />
-        </div>
+        <HomeTripSearch />
+        <p className="dashboard-help"><a href="/bookings/lookup">Already booked? Find your booking by reference</a></p>
       </section>
 
       <section className="section-gap">
