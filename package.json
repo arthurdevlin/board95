@@ -2,13 +2,17 @@
   "name": "board95",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "^22.12.0 || >=24.0.0"
+  },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "seed:demo": "tsx prisma/seed-demo-users.ts",
-    "db:clean": "tsx prisma/clean-database.ts"
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "db:clean": "tsx prisma/clean-database.ts",
+    "db:prune-rate-limits": "tsx prisma/prune-rate-limits.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.1",

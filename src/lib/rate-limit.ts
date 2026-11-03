@@ -2,13 +2,13 @@ import { createHmac } from "node:crypto";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
-export async function allowRequest(scope: string, limit: number, windowMs: number) {
+export async function allowRequest(scope: string, limit: number, windowMs: number, identity?: string) {
   const requestHeaders = await headers();
   const ip = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim()
     ?? requestHeaders.get("x-real-ip")
     ?? "local-unknown";
   const keyHash = createHmac("sha256", process.env.BETTER_AUTH_SECRET ?? "board95-local-rate-limit")
-    .update(`${scope}:${ip}`)
+    .update(`${scope}:${identity ?? ip}`)
     .digest("hex");
   const now = new Date();
   const resetAt = new Date(now.getTime() + windowMs);

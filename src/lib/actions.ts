@@ -1,11 +1,10 @@
 "use server";
 
-import { headers } from "next/headers";
+import { formatTimestamp } from "@/lib/format";
 import { randomBytes } from "node:crypto";
 import { hashPassword } from "better-auth/crypto";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
 import { getSession } from "@/lib/session";
 import { dayRange, toMalawiDate } from "@/lib/dates";
 import { prisma } from "@/lib/prisma";
@@ -13,6 +12,8 @@ import { board95Url, deliverEmailDelivery, sendBoard95Email } from "@/lib/email"
 import { allowRequest } from "@/lib/rate-limit";
 import { hashGuestToken, matchesGuestToken, normalizeMalawiPhone } from "@/lib/guest-access";
 import { removeCarPhoto, storeCarPhoto } from "@/lib/car-photo-storage";
+import { CAR_HIRE_DISTRICTS, type CarHireDistrictCode } from "@/lib/car-hire-districts";
+import { isDatabaseAmount, isSelfServiceApplicationKind } from "@/lib/validation";
 
 export type BookingRequestState = {
   status: "idle" | "success" | "unavailable" | "error";
@@ -56,12 +57,8 @@ export async function saveProfileSettingsAction(formData: FormData) {
   redirect("/settings?saved=1");
 }
 
-export async function signOutAction() {
-  await auth.api.signOut({ headers: await headers() });
-  redirect("/");
-}
-
 export async function applyForAccountTypeFromSignup(kind: "TAXI_OWNER" | "CAR_HIRER", displayName: string, phone: string) {
+  if (!isSelfServiceApplicationKind(kind)) return { error: "Choose a taxi-driver or car-hire application." };
   const session = await getSession();
   if (!session?.user?.id || session.user.role !== "CUSTOMER") return { error: "Sign in as a passenger before applying." };
   const name = displayName.trim();
@@ -90,10 +87,6 @@ export async function requestSeatAction(
   formData: FormData,
 ): Promise<BookingRequestState> {
   const session = await getSession();
-  if (session?.user?.id) {
-    const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { active: true } });
-    if (!user?.active) return { status: "error", message: "This account is inactive. Contact Board95 support." };
-  }
   const bookingLimit = session
     ? await allowRequest("signed-in-booking", 20, 10 * 60 * 1000)
     : await allowRequest("guest-booking", 8, 10 * 60 * 1000);
@@ -111,6 +104,11 @@ export async function requestSeatAction(
   }
   if (!/^(?:\+265|0)(?:8|9|2)\d{8}$/.test(rawPhone)) {
     return { status: "error", message: "Enter a valid Malawi mobile number, such as 0991 234 567 or +265 991 234 567." };
+  }
+  const phone = normalizeMalawiPhone(rawPhone);
+  if (!phone) return { status: "error", message: "Enter a valid Malawi mobile number." };
+  if (!(await allowRequest("booking-phone", 3, 60 * 60 * 1000, phone))) {
+    return { status: "error", message: "Too many booking attempts for this mobile number. Try again later." };
   }
   if (email && (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) {
     return { status: "error", message: "Enter a valid email address or leave it blank." };
@@ -140,22 +138,30 @@ export async function requestSeatAction(
           seatsAvailable: true,
           pickupAvailable: true,
           pickupFeeMWK: true,
-          operator: { select: { active: true, verified: true } },
+          operator: { select: { active: true, verified: true, owner: { select: { active: true } } } },
         },
       });
 
-      if (!trip || trip.seatsAvailable <= 0 || !trip.operator.active || !trip.operator.verified || trip.departureAt <= now || (pickupRequested && !trip.pickupAvailable)) {
+      if (!trip || trip.seatsAvailable <= 0 || !trip.operator.active || !trip.operator.verified || trip.operator.owner?.active === false || trip.departureAt <= now || (pickupRequested && !trip.pickupAvailable)) {
         return "unavailable" as const;
       }
 
+      const existingOpenBooking = await tx.booking.findFirst({
+        where: { tripId: trip.id, guestPhone: phone, status: { in: ["PENDING", "ACCEPTED"] } },
+        select: { id: true },
+      });
+      if (existingOpenBooking) return "duplicate" as const;
+
+      const totalMWK = trip.fareMWK + (pickupRequested ? trip.pickupFeeMWK ?? 0 : 0);
+      if (!isDatabaseAmount(totalMWK)) return "unavailable" as const;
       const booking = await tx.booking.create({
         data: {
           tripId: trip.id,
           seats: 1,
-          totalMWK: trip.fareMWK + (pickupRequested ? trip.pickupFeeMWK ?? 0 : 0),
+          totalMWK,
           userId: session?.user?.id ?? null,
           guestName,
-          guestPhone: rawPhone.startsWith("+") ? rawPhone : `+265${rawPhone.slice(1)}`,
+          guestPhone: phone,
           guestEmail: email || null,
           pickupRequested,
           pickupLocation: pickupRequested ? pickupLocation : null,
@@ -166,7 +172,7 @@ export async function requestSeatAction(
       });
 
       return `created:${booking.id}` as const;
-    });
+    }, { isolationLevel: "Serializable" });
   } catch {
     return {
       status: "error",
@@ -185,6 +191,10 @@ export async function requestSeatAction(
     };
   }
 
+  if (result === "duplicate") {
+    return { status: "error", message: "There is already a pending or confirmed request for this trip and mobile number." };
+  }
+
   revalidatePath("/operator");
   revalidatePath("/admin");
 
@@ -196,7 +206,7 @@ export async function requestSeatAction(
   if (bookingForEmail) {
     const route = `${bookingForEmail.trip.origin} to ${bookingForEmail.trip.destination}`;
     const reference = bookingForEmail.id.slice(-8).toUpperCase();
-    const departure = new Intl.DateTimeFormat("en-MW", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Blantyre" }).format(bookingForEmail.trip.departureAt);
+    const departure = formatTimestamp(bookingForEmail.trip.departureAt);
     const operatorEmail = bookingForEmail.trip.operator.owner?.email ?? process.env.BOARD95_ADMIN_EMAIL;
     await Promise.all([
       sendBoard95Email({ to: operatorEmail, subject: "New passenger booking", lines: [`A new request is waiting for ${route}.`, `Passenger: ${bookingForEmail.guestName ?? "Passenger"} · ${bookingForEmail.guestPhone ?? "No mobile"}`, `Departure: ${departure}. Reference: ${reference}.`], action: { label: "Open operator dashboard", href: board95Url("/operator") } }),
@@ -236,15 +246,21 @@ export async function assignBusCompanyMemberAction(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const role = String(formData.get("memberRole") ?? "");
+  const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
   if (!operatorId || operatorId.length > 64 || !["ADMIN", "STAFF"].includes(role) || name.length > 100 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid bus company, name, email and access level.");
+  if (password || confirmPassword) {
+    if (password.length < 8 || password.length > 128) throw new Error("Set a password between 8 and 128 characters.");
+    if (password !== confirmPassword) throw new Error("The passwords do not match.");
+  }
   const operator = await prisma.operator.findFirst({ where: { id: operatorId, kind: "BUS_COMPANY" } });
   if (!operator) throw new Error("Bus company not found.");
   let user = await prisma.user.findUnique({ where: { email } });
   let invited = false;
   if (!user) {
     if (name.length < 2) throw new Error("Enter the new local account holder's name.");
-    const temporaryPassword = randomBytes(32).toString("base64url");
-    const passwordHash = await hashPassword(temporaryPassword);
+    if (!password) throw new Error("Set a password for the new company account.");
+    const passwordHash = await hashPassword(password);
     user = await prisma.$transaction(async (tx) => {
       const created = await tx.user.create({ data: { name, email, emailVerified: false, role: "CUSTOMER" } });
       await tx.account.create({ data: { userId: created.id, accountId: created.id, providerId: "credential", password: passwordHash } });
@@ -262,8 +278,7 @@ export async function assignBusCompanyMemberAction(formData: FormData) {
     update: { role: role as "ADMIN" | "STAFF" },
   });
   if (invited) {
-    await auth.api.requestPasswordReset({ body: { email, redirectTo: board95Url("/reset-password") } });
-    await sendBoard95Email({ to: email, subject: "Bus company account created", lines: ["A Board95 administrator created a local account for you and assigned " + (role === "ADMIN" ? "company administrator" : "local staff") + " access to " + operator.name + ".", "Use the separate password reset email to set your password, then sign in to Board95."], action: { label: "Open Board95", href: board95Url("/operator") } });
+    await sendBoard95Email({ to: email, subject: "Bus company account created", lines: ["A Board95 administrator created a local account for you and assigned " + (role === "ADMIN" ? "company administrator" : "local staff") + " access to " + operator.name + ".", "Sign in to Board95 with the password provided by your administrator."], action: { label: "Open Board95", href: board95Url("/operator") } });
   } else {
     await sendBoard95Email({ to: email, subject: "Bus company access assigned", lines: ["Your account has been assigned " + (role === "ADMIN" ? "bus company administrator" : "local staff") + " access for " + operator.name + ".", "Sign in to Board95 and open the operator dashboard from your account menu."], action: { label: "Open Board95", href: board95Url("/operator") } });
   }
@@ -283,6 +298,7 @@ export async function setOperatorApprovalAction(formData: FormData) {
   await prisma.operator.update({ where: { id: operatorId }, data: { verified: approved } });
   const memberEmails = await prisma.operatorMember.findMany({ where: { operatorId }, select: { user: { select: { email: true } } } });
   await Promise.all([operator.owner?.email, ...memberEmails.map((member) => member.user.email)].filter((email): email is string => Boolean(email)).map((email) => sendBoard95Email({ to: email, subject: approved ? "Operator profile approved" : "Operator approval changed", lines: ["A Board95 administrator " + (approved ? "approved" : "changed the approval status of") + " " + operator.name + ".", "Contact Board95 support if you need help."], action: { label: "Open operator dashboard", href: board95Url("/operator") } })));
+  updateTag("public-trips");
   revalidatePath("/admin");
   revalidatePath("/operator");
 }
@@ -299,6 +315,7 @@ export async function setOperatorActiveAction(formData: FormData) {
   await prisma.operator.update({ where: { id: operatorId }, data: { active } });
   const memberEmails = await prisma.operatorMember.findMany({ where: { operatorId }, select: { user: { select: { email: true } } } });
   await Promise.all([operator.owner?.email, ...memberEmails.map((member) => member.user.email)].filter((email): email is string => Boolean(email)).map((email) => sendBoard95Email({ to: email, subject: active ? "Operator account restored" : "Operator account blocked", lines: ["A Board95 administrator " + (active ? "restored" : "blocked") + " the " + operator.kind.replace("_", " ").toLowerCase() + " profile for " + operator.name + ".", "Contact Board95 support if you need help."], action: { label: "Open operator dashboard", href: board95Url("/operator") } })));
+  updateTag("public-trips");
   revalidatePath("/admin");
   revalidatePath("/operator");
   revalidatePath("/transport");
@@ -315,6 +332,7 @@ export async function setUserActiveAction(formData: FormData) {
   if (!user) throw new Error("User not found.");
   await prisma.user.update({ where: { id: userId }, data: { active } });
   await sendBoard95Email({ to: user.email, subject: active ? "Your Board95 account was restored" : "Your Board95 account was blocked", lines: ["A Board95 administrator " + (active ? "restored" : "blocked") + " your account.", "Contact Board95 support if you need help."] });
+  updateTag("public-trips");
   revalidatePath("/admin");
 }
 
@@ -322,12 +340,15 @@ export async function deleteUserAction(formData: FormData) {
   const adminId = await getAdministratorId();
   const userId = String(formData.get("userId") ?? "");
   if (!userId || userId === adminId || userId.length > 64) throw new Error("Invalid user.");
-  const target = await prisma.user.findUnique({ where: { id: userId }, select: { active: true } });
-  if (!target || target.active) throw new Error("Block this account before deleting it.");
   await prisma.$transaction(async (tx) => {
+    const target = await tx.user.findUnique({ where: { id: userId }, select: { active: true } });
+    if (!target || target.active) throw new Error("Block this account before deleting it.");
+    const rentalHistory = await tx.carHireRequest.findFirst({ where: { listing: { ownerId: userId } }, select: { id: true } });
+    if (rentalHistory) throw new Error("This provider has rental request history. Keep the account blocked to preserve passenger records.");
     await tx.operator.updateMany({ where: { ownerId: userId }, data: { ownerId: null, active: false } });
     await tx.user.delete({ where: { id: userId } });
-  });
+  }, { isolationLevel: "Serializable" });
+  updateTag("public-trips");
   revalidatePath("/admin");
 }
 
@@ -337,15 +358,19 @@ export async function createAdminUserAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const rawPhone = String(formData.get("phone") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
+  const role = String(formData.get("role") ?? "CUSTOMER");
   const phone = rawPhone ? normalizeMalawiPhone(rawPhone) : null;
   if (name.length < 2 || name.length > 100) throw new Error("Enter a name between 2 and 100 characters.");
   if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid email address.");
   if (rawPhone && !phone) throw new Error("Enter a valid Malawi mobile number or leave the phone field blank.");
   if (password.length < 8 || password.length > 128) throw new Error("Set a password between 8 and 128 characters.");
+  if (password !== confirmPassword) throw new Error("The passwords do not match.");
+  if (role !== "CUSTOMER" && role !== "ADMIN") throw new Error("Choose a valid account type.");
   const passwordHash = await hashPassword(password);
   try {
     await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({ data: { name, email, phone, emailVerified: false, role: "CUSTOMER" } });
+      const user = await tx.user.create({ data: { name, email, phone, emailVerified: false, role: role as "CUSTOMER" | "ADMIN" } });
       await tx.account.create({ data: { userId: user.id, accountId: user.id, providerId: "credential", password: passwordHash } });
     });
   } catch (error) {
@@ -353,15 +378,16 @@ export async function createAdminUserAction(formData: FormData) {
     throw error;
   }
   revalidatePath("/admin");
-  redirect("/admin#user-accounts");
 }
 
 export async function setUserPasswordAction(formData: FormData) {
   await getAdministratorId();
   const userId = String(formData.get("userId") ?? "");
   const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
   if (!userId || userId.length > 64) throw new Error("Invalid user.");
   if (password.length < 8 || password.length > 128) throw new Error("Set a password between 8 and 128 characters.");
+  if (password !== confirmPassword) throw new Error("The passwords do not match.");
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
   if (!user) throw new Error("User not found.");
   const passwordHash = await hashPassword(password);
@@ -384,7 +410,7 @@ export async function submitAccountApplicationAction(formData: FormData) {
   const kind = String(formData.get("kind") ?? "");
   const displayName = String(formData.get("displayName") ?? "").trim();
   const rawPhone = String(formData.get("phone") ?? "").replace(/[\s()-]/g, "");
-  if (!["TAXI_OWNER", "CAR_HIRER"].includes(kind)) throw new Error("Choose a taxi-owner or car-hire account type. Bus company profiles are created by administrators.");
+  if (!isSelfServiceApplicationKind(kind)) throw new Error("Choose a taxi-owner or car-hire account type. Bus company profiles are created by administrators.");
   if (displayName.length < 2 || displayName.length > 100) throw new Error("Enter a valid business or operator name.");
   if (!/^(?:\+265|0)(?:8|9|2)\d{8}$/.test(rawPhone)) throw new Error("Enter a valid Malawi mobile number.");
   const openRequest = await prisma.application.findFirst({ where: { userId: session.user.id, kind: kind as "TAXI_OWNER" | "BUS_COMPANY" | "CAR_HIRER", status: "PENDING" } });
@@ -427,6 +453,7 @@ export async function reviewAccountApplicationAction(formData: FormData) {
       active: true,
     } });
   });
+  updateTag("public-trips");
   revalidatePath("/admin");
   revalidatePath("/account");
   revalidatePath("/operator");
@@ -445,10 +472,6 @@ export async function updateBookingStatusAction(formData: FormData) {
   if (!session?.user?.id) throw new Error("Operator access required.");
   const memberships = session.user.role === "CUSTOMER" ? await prisma.operatorMember.findMany({ where: { userId: session.user.id, operator: { kind: "BUS_COMPANY", active: true, verified: true } }, select: { operatorId: true } }) : [];
   if (!["OWNER", "ADMIN"].includes(session.user.role) && memberships.length === 0) throw new Error("Operator access required.");
-  if (session.user.role === "OWNER") {
-    const user = await prisma.user.findUnique({ where: { id: session.user.id }, select: { active: true } });
-    if (!user?.active) throw new Error("This account is inactive.");
-  }
   const bookingId = String(formData.get("bookingId") ?? "");
   const status = String(formData.get("status") ?? "");
   if (!bookingId || !["ACCEPTED", "DECLINED", "CANCELLED", "COMPLETED"].includes(status)) throw new Error("Invalid booking update.");
@@ -459,7 +482,7 @@ export async function updateBookingStatusAction(formData: FormData) {
       id: bookingId,
       ...(session.user.role === "ADMIN" ? {} : session.user.role === "OWNER" ? { trip: { operator: { ownerId: session.user.id, active: true, verified: true } } } : { trip: { operatorId: { in: memberships.map((membership) => membership.operatorId) } } }),
     },
-    select: { id: true, tripId: true, status: true, seats: true, reviewedByAdmin: true, trip: { select: { departureAt: true, seatsTotal: true } } },
+    select: { id: true, userId: true, tripId: true, status: true, seats: true, reviewedByAdmin: true, trip: { select: { departureAt: true, seatsTotal: true } } },
   });
   if (!booking) throw new Error("Booking not found.");
   const nextStatus = status as "ACCEPTED" | "DECLINED" | "CANCELLED" | "COMPLETED";
@@ -480,6 +503,7 @@ export async function updateBookingStatusAction(formData: FormData) {
       if (restored.count !== 1) throw new Error("Seat inventory could not be restored safely.");
     }
   });
+  updateTag("public-trips");
   revalidatePath("/operator");
   revalidatePath("/admin");
   revalidatePath("/account");
@@ -506,6 +530,7 @@ export async function cancelPassengerBookingAction(formData: FormData) {
       if (restored.count !== 1) throw new Error("Seat inventory could not be restored safely.");
     }
   });
+  updateTag("public-trips");
   revalidatePath("/account");
   revalidatePath("/operator");
   revalidatePath("/admin");
@@ -536,6 +561,7 @@ export async function updateOperatorProfileAction(formData: FormData) {
   if (name.length < 2 || name.length > 100 || !/^(?:\+265|0)(?:8|9|2)\d{8}$/.test(rawPhone)) throw new Error("Enter a profile name and valid Malawi mobile number.");
   const result = await prisma.operator.updateMany({ where: { id: operatorId, ...(session.user.role === "ADMIN" ? {} : { ownerId: session.user.id }) }, data: { name, phone: rawPhone.startsWith("+") ? rawPhone : `+265${rawPhone.slice(1)}` } });
   if (result.count !== 1) throw new Error("Operator profile not found.");
+  updateTag("public-trips");
   revalidatePath("/operator");
   revalidatePath(`/operator/profiles/${operatorId}`);
   revalidatePath("/transport");
@@ -557,6 +583,7 @@ export async function deleteOperatorProfileAction(formData: FormData) {
       if (remainingOperators === 0) await tx.user.updateMany({ where: { id: operator.ownerId, role: "OWNER" }, data: { role: "CUSTOMER" } });
     }
   });
+  updateTag("public-trips");
   revalidatePath("/account");
   revalidatePath("/operator");
   revalidatePath("/admin");
@@ -572,6 +599,7 @@ export async function updateVehicleAction(formData: FormData) {
   const vehicle = await prisma.vehicle.findFirst({ where: { id: vehicleId, ...(session.user.role === "ADMIN" ? {} : { operator: { ownerId: session.user.id } }) } });
   if (!vehicle) throw new Error("Vehicle not found.");
   await prisma.vehicle.update({ where: { id: vehicleId }, data: { model, plate } });
+  updateTag("public-trips");
   revalidatePath("/operator");
   revalidatePath(`/operator/vehicles/${vehicleId}`);
   revalidatePath("/transport");
@@ -585,6 +613,7 @@ export async function deleteVehicleAction(formData: FormData) {
   if (!vehicle) throw new Error("Vehicle not found.");
   if (vehicle._count.trips) throw new Error("This vehicle has trip history. Edit its details or remove its unbooked trips before deleting it.");
   await prisma.vehicle.delete({ where: { id: vehicleId } });
+  updateTag("public-trips");
   revalidatePath("/operator");
   revalidatePath("/admin");
 }
@@ -602,7 +631,7 @@ export async function updateTripScheduleAction(formData: FormData) {
   const pickupAvailable = formData.get("pickupAvailable") === "on";
   const pickupFeeMWK = pickupAvailable ? Number(formData.get("pickupFeeMWK") ?? 0) : null;
   if (!["Blantyre", "Lilongwe", "Mzuzu"].includes(origin) || !["Blantyre", "Lilongwe", "Mzuzu"].includes(destination) || origin === destination) throw new Error("Choose two different Malawi cities.");
-  if (departureName.length < 2 || departureName.length > 100 || !Number.isSafeInteger(fareMWK) || fareMWK < 1 || (pickupFeeMWK !== null && (!Number.isSafeInteger(pickupFeeMWK) || pickupFeeMWK < 0))) throw new Error("Check the departure date, time, location and fare.");
+  if (departureName.length < 2 || departureName.length > 100 || !isDatabaseAmount(fareMWK) || !isDatabaseAmount(fareMWK + (pickupFeeMWK ?? 0)) || (pickupFeeMWK !== null && (!isDatabaseAmount(pickupFeeMWK, 0)))) throw new Error("Check the departure date, time, location and fare.");
   const departureAt = parseMalawiDeparture(date, time);
   if (!departureAt || departureAt <= new Date()) throw new Error("Only valid future departures can be edited.");
   const trip = await prisma.trip.findFirst({ where: { id: tripId, ...(session.user.role === "ADMIN" ? {} : { operator: { ownerId: session.user.id, active: true, verified: true } }) }, include: { operator: true } });
@@ -621,6 +650,7 @@ export async function updateTripScheduleAction(formData: FormData) {
       : await tx.departurePoint.create({ data: pointData });
     await tx.trip.update({ where: { id: trip.id }, data: { origin: origin as "Blantyre" | "Lilongwe" | "Mzuzu", destination: destination as "Blantyre" | "Lilongwe" | "Mzuzu", departureAt, departurePointId: point.id, fareMWK, pickupAvailable, pickupFeeMWK } });
   }, { isolationLevel: "Serializable" });
+  updateTag("public-trips");
   revalidatePath("/operator");
   revalidatePath(`/operator/trips/${tripId}`);
   revalidatePath("/transport");
@@ -635,6 +665,7 @@ export async function deleteTripScheduleAction(formData: FormData) {
   if (!trip) throw new Error("Trip not found.");
   if (trip._count.bookings) throw new Error("This trip has booking history and cannot be deleted. Contact passengers and support to cancel it safely.");
   await prisma.trip.delete({ where: { id: tripId } });
+  updateTag("public-trips");
   revalidatePath("/operator");
   revalidatePath("/admin");
   revalidatePath("/transport");
@@ -756,7 +787,7 @@ export async function createOperatorTripAction(formData: FormData) {
   const pickupFeeMWK = pickupAvailable ? Number(formData.get("pickupFeeMWK") ?? 0) : null;
   if (!operatorId || operatorId.length > 64 || name.length < 2 || name.length > 80 || !/^[A-Z0-9 -]{3,20}$/.test(plate)) throw new Error("Enter a valid operator, vehicle model and plate.");
   if (!Number.isSafeInteger(seats) || seats < 1 || seats > 100 || !["Blantyre", "Lilongwe", "Mzuzu"].includes(origin) || !["Blantyre", "Lilongwe", "Mzuzu"].includes(destination) || origin === destination) throw new Error("Check the route and seat count.");
-  if (departureName.length < 2 || departureName.length > 100 || !Number.isSafeInteger(fareMWK) || fareMWK < 1 || (pickupFeeMWK !== null && (!Number.isSafeInteger(pickupFeeMWK) || pickupFeeMWK < 0))) throw new Error("Check the departure date, time, location and fare.");
+  if (departureName.length < 2 || departureName.length > 100 || !isDatabaseAmount(fareMWK) || !isDatabaseAmount(fareMWK + (pickupFeeMWK ?? 0)) || (pickupFeeMWK !== null && (!isDatabaseAmount(pickupFeeMWK, 0)))) throw new Error("Check the departure date, time, location and fare.");
   const departureAt = parseMalawiDeparture(date, time);
   if (!departureAt || departureAt <= new Date()) throw new Error("Departure must be a valid future date and time.");
 
@@ -794,6 +825,7 @@ export async function createOperatorTripAction(formData: FormData) {
       pickupFeeMWK,
     } });
   }, { isolationLevel: "Serializable" });
+  updateTag("public-trips");
   revalidatePath("/operator");
   revalidatePath("/transport");
   revalidatePath("/");
@@ -808,18 +840,18 @@ export async function createCarHireListingAction(formData: FormData) {
   const contactPhone = normalizeMalawiPhone(String(formData.get("contactPhone") ?? ""));
   const rawLorryCapacity = String(formData.get("lorryCapacityTons") ?? "").trim();
   const lorryCapacityTons = rawLorryCapacity ? Number(rawLorryCapacity) : null;
-  const city = String(formData.get("city") ?? "");
+  const district = String(formData.get("district") ?? "");
   const rate = Number(formData.get("dailyRateMWK"));
   const description = String(formData.get("description") ?? "").trim();
   const photo = formData.get("photo");
   if (name.length < 2 || name.length > 80 || model.length < 2 || model.length > 80) throw new Error("Enter a valid vehicle name and model.");
   if (!["SALOON", "SUV", "PICKUP", "MINIBUS", "BUS", "TRUCK", "LORRY", "VAN", "OTHER"].includes(vehicleType) || !contactPhone) throw new Error("Choose a vehicle type and enter a valid Malawi contact number.");
   if (vehicleType === "LORRY" && (!Number.isSafeInteger(lorryCapacityTons) || (lorryCapacityTons ?? 0) < 1 || (lorryCapacityTons ?? 0) > 100)) throw new Error("Enter the lorry capacity in tons (1–100).");
-  if (!["Blantyre", "Lilongwe", "Mzuzu"].includes(city) || !Number.isSafeInteger(rate) || rate < 1) throw new Error("Enter a valid city and daily rate.");
+  if (!CAR_HIRE_DISTRICTS.some(([value]) => value === district) || !isDatabaseAmount(rate)) throw new Error("Choose a valid district and enter a daily rate.");
   const image = await readCarPhoto(photo);
   const storedPhoto = await storeCarPhoto(image.bytes, image.extension);
   try {
-    await prisma.carHireListing.create({ data: { ownerId: session.user.id, name, model, vehicleType: vehicleType as "SALOON" | "SUV" | "PICKUP" | "MINIBUS" | "BUS" | "TRUCK" | "LORRY" | "VAN" | "OTHER", lorryCapacityTons: vehicleType === "LORRY" ? lorryCapacityTons : null, contactPhone, city: city as "Blantyre" | "Lilongwe" | "Mzuzu", dailyRateMWK: rate, description: description.slice(0, 500) || null, photoUrl: storedPhoto.url } });
+    await prisma.carHireListing.create({ data: { ownerId: session.user.id, name, model, vehicleType: vehicleType as "SALOON" | "SUV" | "PICKUP" | "MINIBUS" | "BUS" | "TRUCK" | "LORRY" | "VAN" | "OTHER", lorryCapacityTons: vehicleType === "LORRY" ? lorryCapacityTons : null, contactPhone, district: district as CarHireDistrictCode, dailyRateMWK: rate, description: description.slice(0, 500) || null, photoUrl: storedPhoto.url } });
   } catch (error) {
     await storedPhoto.cleanup();
     throw error;
@@ -838,15 +870,13 @@ export async function updateCarHireListingAction(formData: FormData) {
   const contactPhone = normalizeMalawiPhone(String(formData.get("contactPhone") ?? ""));
   const rawLorryCapacity = String(formData.get("lorryCapacityTons") ?? "").trim();
   const lorryCapacityTons = rawLorryCapacity ? Number(rawLorryCapacity) : null;
-  const city = String(formData.get("city") ?? "");
+  const district = String(formData.get("district") ?? "");
   const rate = Number(formData.get("dailyRateMWK"));
   const description = String(formData.get("description") ?? "").trim();
   if (name.length < 2 || name.length > 80 || model.length < 2 || model.length > 80) throw new Error("Enter a valid vehicle name and model.");
   if (!["SALOON", "SUV", "PICKUP", "MINIBUS", "BUS", "TRUCK", "LORRY", "VAN", "OTHER"].includes(vehicleType) || !contactPhone) throw new Error("Choose a vehicle type and enter a valid Malawi contact number.");
   if (vehicleType === "LORRY" && (!Number.isSafeInteger(lorryCapacityTons) || (lorryCapacityTons ?? 0) < 1 || (lorryCapacityTons ?? 0) > 100)) throw new Error("Enter the lorry capacity in tons (1–100).");
-  if (![
-    "Blantyre", "Lilongwe", "Mzuzu",
-  ].includes(city) || !Number.isSafeInteger(rate) || rate < 1) throw new Error("Enter a valid city and daily rate.");
+  if (!CAR_HIRE_DISTRICTS.some(([value]) => value === district) || !isDatabaseAmount(rate)) throw new Error("Choose a valid district and enter a daily rate.");
   const listing = await prisma.carHireListing.findFirst({ where: { id, ...(session.user.role === "ADMIN" ? {} : { ownerId: session.user.id }) } });
   if (!listing) throw new Error("Vehicle listing not found.");
   const photoValue = formData.get("photo");
@@ -856,7 +886,7 @@ export async function updateCarHireListingAction(formData: FormData) {
     storedPhoto = await storeCarPhoto(image.bytes, image.extension);
   }
   try {
-    await prisma.carHireListing.update({ where: { id }, data: { name, model, vehicleType: vehicleType as "SALOON" | "SUV" | "PICKUP" | "MINIBUS" | "BUS" | "TRUCK" | "LORRY" | "VAN" | "OTHER", lorryCapacityTons: vehicleType === "LORRY" ? lorryCapacityTons : null, contactPhone, city: city as "Blantyre" | "Lilongwe" | "Mzuzu", dailyRateMWK: rate, description: description.slice(0, 500) || null, ...(storedPhoto ? { photoUrl: storedPhoto.url } : {}) } });
+    await prisma.carHireListing.update({ where: { id }, data: { name, model, vehicleType: vehicleType as "SALOON" | "SUV" | "PICKUP" | "MINIBUS" | "BUS" | "TRUCK" | "LORRY" | "VAN" | "OTHER", lorryCapacityTons: vehicleType === "LORRY" ? lorryCapacityTons : null, contactPhone, district: district as CarHireDistrictCode, dailyRateMWK: rate, description: description.slice(0, 500) || null, ...(storedPhoto ? { photoUrl: storedPhoto.url } : {}) } });
   } catch (error) {
     if (storedPhoto) await storedPhoto.cleanup();
     throw error;
@@ -917,7 +947,7 @@ export async function requestCarHireAction(_previous: CarHireRequestState, formD
       if (!listing) return { kind: "unavailable" as const };
       if (session?.user?.id === listing.ownerId) return { kind: "self-request" as const };
       const totalMWK = listing.dailyRateMWK * days;
-      if (!Number.isSafeInteger(totalMWK)) return { kind: "invalid-total" as const };
+      if (!isDatabaseAmount(totalMWK)) return { kind: "invalid-total" as const };
       const conflict = await tx.carHireRequest.findFirst({ where: { listingId, status: "ACCEPTED", startsAt: { lt: endsAt }, endsAt: { gt: startsAt } }, select: { id: true } });
       if (conflict) return { kind: "conflict" as const };
       const request = await tx.carHireRequest.create({ data: { listingId, passengerId: session?.user?.id ?? null, guestName, guestPhone: phone, guestEmail: guestEmail || null, startsAt, endsAt, totalMWK } });
@@ -926,10 +956,15 @@ export async function requestCarHireAction(_previous: CarHireRequestState, formD
   } catch {
     return { status: "error", message: "We could not save the request. Refresh and try again." };
   }
-  if (outcome.kind === "unavailable") return { status: "error", message: "This vehicle is no longer available." };
-  if (outcome.kind === "self-request") return { status: "error", message: "You cannot request your own vehicle." };
-  if (outcome.kind === "invalid-total") return { status: "error", message: "This rental total is outside the supported range." };
-  if (outcome.kind === "conflict") return { status: "error", message: "Those dates have just been taken. Choose another period." };
+  if (outcome.kind !== "created") {
+    const messages = {
+      unavailable: "This vehicle is no longer available.",
+      "self-request": "You cannot request your own vehicle.",
+      "invalid-total": "This rental total is outside the supported range.",
+      conflict: "Those dates have just been taken. Choose another period.",
+    } as const;
+    return { status: "error", message: messages[outcome.kind] };
+  }
   const { request, listing, totalMWK } = outcome;
   const reference = request.id.slice(-8).toUpperCase();
   await Promise.all([
@@ -970,7 +1005,7 @@ export async function cancelCarHireRequestAction(formData: FormData) {
   if (!request || request.startsAt <= new Date()) throw new Error("Only future rental requests can be cancelled.");
   const cancelled = await prisma.carHireRequest.updateMany({ where: { id: request.id, passengerId: session.user.id, status: request.status }, data: { status: "CANCELLED" } });
   if (cancelled.count !== 1) throw new Error("This rental request has already changed.");
-  await sendBoard95Email({ to: request.listing.owner.email, subject: "Car-hire request cancelled", lines: [`${request.guestName} cancelled the request for ${request.listing.name}.`, `Dates: ${request.startsAt.toISOString().slice(0, 10)} to ${request.endsAt.toISOString().slice(0, 10)}.`] });
+  await sendBoard95Email({ to: request.listing.owner.email, subject: "Car-hire request cancelled", lines: [`${request.guestName} cancelled the request for ${request.listing.name}.`, `Dates: ${toMalawiDate(request.startsAt)} to ${toMalawiDate(request.endsAt)}.`] });
   revalidatePath("/account");
   revalidatePath("/car-hire/dashboard");
 }

@@ -2,6 +2,9 @@ import "dotenv/config";
 import { prisma } from "../src/lib/prisma";
 
 async function main() {
+  if (process.env.NODE_ENV === "production" || !process.argv.includes("--confirm-delete-data")) {
+    throw new Error("Cleanup is for disposable development databases only. Pass --confirm-delete-data explicitly; production is refused.");
+  }
   const admins = await prisma.user.findMany({ where: { role: "ADMIN" }, select: { id: true, email: true } });
   if (admins.length !== 1) {
     throw new Error(`Cleanup stopped: expected exactly one admin account, found ${admins.length}. Resolve admin accounts before retrying.`);

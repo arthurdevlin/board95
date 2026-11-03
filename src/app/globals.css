@@ -78,7 +78,7 @@ select:focus-visible {
 
 .site-header > div {
   max-width: 76rem !important;
-  min-height: 76px;
+  min-height: 68px;
   padding-inline: clamp(1rem, 4vw, 3rem) !important;
 }
 
@@ -90,8 +90,8 @@ select:focus-visible {
 
 .site-logo {
   display: block;
-  width: 13rem;
-  height: 3.25rem;
+  width: 10rem;
+  height: 2.6rem;
   object-fit: cover;
   object-position: center;
 }
@@ -127,7 +127,7 @@ select:focus-visible {
 
 .site-main {
   max-width: 76rem !important;
-  padding: clamp(1.5rem, 4vw, 3.5rem) clamp(1rem, 4vw, 3rem) 4rem !important;
+  padding: clamp(1.25rem, 2.5vw, 2rem) clamp(1rem, 4vw, 3rem) 3rem !important;
 }
 
 .site-footer {
@@ -149,7 +149,7 @@ select:focus-visible {
     radial-gradient(ellipse at 88% 4%, rgb(99 169 239 / 31%), transparent 27rem),
     radial-gradient(ellipse at 6% 100%, rgb(61 128 208 / 23%), transparent 32rem),
     linear-gradient(125deg, #102344 0%, #153d73 53%, #1c5594 100%) !important;
-  padding: clamp(2rem, 5.7vw, 5.25rem) !important;
+  padding: clamp(1.5rem, 3vw, 2.5rem) !important;
   box-shadow: 0 26px 72px rgb(19 47 87 / 22%);
 }
 
@@ -167,16 +167,16 @@ select:focus-visible {
 }
 
 .hero h1 {
-  max-width: 14ch;
+  max-width: 23ch;
   color: #fffefa;
-  font-size: clamp(2.4rem, 5.5vw, 4.6rem);
+  font-size: clamp(2.1rem, 4vw, 3.3rem);
   line-height: 1.04;
   letter-spacing: -0.06em;
 }
 
 .hero h1::before {
   display: table;
-  margin-bottom: 1.05rem;
+  margin-bottom: 0.8rem;
   border: 1px solid rgb(220 235 255 / 26%);
   border-radius: 999px;
   background: rgb(255 255 255 / 8%);
@@ -191,33 +191,45 @@ select:focus-visible {
 
 .hero > p {
   max-width: 36rem;
-  margin-top: 1.25rem !important;
+  margin-top: 0.85rem !important;
   color: rgb(250 250 239 / 82%) !important;
   font-size: clamp(1rem, 1.5vw, 1.15rem);
-  line-height: 1.7;
+  line-height: 1.55;
 }
 
 .hero > div {
-  margin-top: clamp(2rem, 4vw, 3rem) !important;
+  margin-top: clamp(1rem, 2vw, 1.5rem) !important;
 }
 
 /* The home search stays inline on desktop and opens as a popup on phones. */
 .home-search-trigger,
 .home-search-dialog { display: none; }
-.home-search-desktop { margin-top: clamp(2rem, 4vw, 3rem) !important; }
-.home-search-dialog { width: min(calc(100% - 2rem), 36rem); max-width: none; max-height: 90dvh; margin: auto; border: 0; border-radius: 1.2rem; background: transparent; padding: 0; color: var(--foreground); overflow: visible; }
+.home-search-mobile-actions { display: none; }
+.home-search-desktop { margin-top: clamp(1rem, 2vw, 1.5rem) !important; }
+.home-search-dialog { width: min(calc(100% - 1.5rem), 34rem); max-width: none; max-height: 90dvh; margin: auto; border: 0; border-radius: 1.1rem; background: transparent; padding: 0; color: var(--foreground); overflow: visible; }
 .home-search-dialog::backdrop { background: rgb(10 25 45 / 66%); backdrop-filter: blur(3px); }
-.home-search-dialog-card { max-height: 90dvh; overflow-y: auto; overscroll-behavior: contain; border: 1px solid rgb(255 255 255 / 55%); border-radius: 1.2rem; background: white; padding: 1.15rem; box-shadow: 0 24px 70px rgb(5 20 42 / 30%); }
-.home-search-dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
-.home-search-dialog-heading h2 { margin-top: 0.3rem; color: #173a6b; font-size: 1.3rem; font-weight: 750; }
+.home-search-dialog-card { max-height: 90dvh; overflow-y: auto; overscroll-behavior: contain; border: 1px solid rgb(255 255 255 / 55%); border-radius: 1.1rem; background: var(--surface); padding: clamp(0.8rem, 3vw, 1rem); box-shadow: 0 24px 70px rgb(5 20 42 / 30%); }
+.home-search-dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.75rem; }
+.home-search-dialog-heading h2 { margin-top: 0.3rem; color: var(--foreground); font-size: 1.3rem; font-weight: 750; }
 .home-search-dialog .search-form { grid-template-columns: minmax(0, 1fr); }
 .home-search-dialog .search-form > .field:nth-child(3) { grid-column: auto; }
 .home-search-dialog .search-form > button[type="submit"] { grid-column: 1; margin-top: 0.25rem; width: 100%; }
 
 @media (max-width: 640px) {
   .home-search-desktop { display: none; }
-  .home-search-trigger { display: inline-flex; margin-top: 1.3rem; }
+  .home-search-mobile-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: 0.6rem; margin-top: 1.1rem; }
+  .home-search-mobile-actions > .btn { display: inline-flex; min-width: 0; width: 100%; min-height: 3rem; align-items: center; justify-content: center; gap: 0.45rem; margin: 0; border: 1px solid transparent; border-radius: 0.7rem; padding: 0.65rem 0.6rem; font-size: 0.88rem; font-weight: 700; line-height: 1.25; text-decoration: none; box-shadow: none; }
+  .home-search-mobile-actions > .btn svg { flex: none; }
+  .home-search-mobile-actions .home-search-trigger { border-color: #f1c45a; background: #f1c45a; color: #142f55; }
+  .home-search-mobile-actions .home-search-trigger:hover { background: #f8d47c; border-color: #f8d47c; }
+  .home-search-mobile-actions .home-hire-trigger { border-color: rgb(221 235 255 / 45%); background: rgb(255 255 255 / 8%); color: #f5f8ff; }
+  .home-search-mobile-actions .home-hire-trigger:hover { background: rgb(255 255 255 / 16%); }
+  .home-search-mobile-actions > .btn:focus-visible { outline: 3px solid white; outline-offset: 3px; }
   .home-search-dialog[open] { display: block; }
+}
+
+@media (max-width: 360px) {
+  .hero .home-search-mobile-actions { grid-template-columns: 1fr; gap: 0.55rem; }
 }
 
 @media (min-width: 641px) {
@@ -228,22 +240,22 @@ select:focus-visible {
 /* Search controls: polished, readable and touch friendly */
 .search-form {
   display: grid;
-  grid-template-columns: minmax(9rem, 1fr) minmax(9rem, 1fr) minmax(14rem, 1.45fr) minmax(8rem, 0.85fr) auto;
+  grid-template-columns: minmax(8rem, 1fr) minmax(8rem, 1fr) minmax(12rem, 1.35fr) minmax(7rem, 0.8fr) auto;
   align-items: start;
-  gap: 0.9rem !important;
+  gap: clamp(0.55rem, 1vw, 0.8rem) !important;
   border: 1px solid rgb(26 60 104 / 11%);
   border-radius: 1.1rem !important;
   background: var(--surface) !important;
-  padding: clamp(1rem, 2vw, 1.5rem) !important;
-  box-shadow: 0 16px 42px rgb(12 40 82 / 14%) !important;
+  padding: clamp(0.7rem, 1.2vw, 0.95rem) !important;
+  box-shadow: 0 10px 28px rgb(12 40 82 / 11%) !important;
 }
 
 .search-form label {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.35rem;
   color: #51647d;
-  font-size: 0.75rem !important;
+  font-size: clamp(0.72rem, 0.68rem + 0.12vw, 0.76rem) !important;
   font-weight: 650 !important;
   letter-spacing: 0.055em;
   text-transform: uppercase;
@@ -251,13 +263,13 @@ select:focus-visible {
 
 .search-form select,
 .search-form input {
-  min-height: 3.25rem;
+  min-height: 3rem;
   border: 1px solid #d8e1ec !important;
-  border-radius: 0.72rem !important;
+  border-radius: 0.65rem !important;
   background-color: #f8faff !important;
   color: var(--foreground) !important;
-  padding-inline: 0.85rem !important;
-  font-size: 0.93rem;
+  padding-inline: 0.75rem !important;
+  font-size: 1rem;
   font-weight: 500;
   letter-spacing: 0;
   text-transform: none;
@@ -316,12 +328,12 @@ select:focus-visible {
 
 .search-form > button[type="submit"] {
   align-self: start;
-  margin-top: 1.55rem;
-  min-height: 3.25rem;
-  border-radius: 0.72rem !important;
+  margin-top: 1.35rem;
+  min-height: 3rem;
+  border-radius: 0.65rem !important;
   background: var(--primary) !important;
-  padding-inline: 1.5rem !important;
-  font-size: 0.95rem;
+  padding-inline: 1.15rem !important;
+  font-size: 0.94rem;
   box-shadow: 0 6px 15px rgb(23 62 120 / 22%);
   transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
 }
@@ -731,11 +743,11 @@ select:focus-visible {
 
   .hero {
     border-radius: 1.35rem !important;
-    padding: 2rem 1.1rem 1.2rem !important;
+    padding: 1.4rem 1.1rem 1.2rem !important;
   }
 
   .hero h1 {
-    font-size: clamp(2.25rem, 10.5vw, 3.3rem);
+    font-size: clamp(1.9rem, 8vw, 2.6rem);
   }
 
   .search-form {
@@ -1204,7 +1216,9 @@ select:focus-visible {
 .dashboard-intro > p:last-child { max-width: 48rem; margin-top: 0.5rem; color: var(--muted); line-height: 1.55; }
 .dashboard-eyebrow { color: #54708f; font-size: 0.68rem; font-weight: 750; letter-spacing: 0.14em; text-transform: uppercase; }
 .dashboard-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.8rem; }
-.dashboard-stats > div { display: grid; gap: 0.3rem; border: 1px solid var(--line); border-radius: 0.85rem; background: white; padding: 1rem; box-shadow: 0 4px 14px rgb(25 56 97 / 5%); }
+.dashboard-stats > div, .dashboard-stats > a { display: grid; gap: 0.3rem; border: 1px solid var(--line); border-radius: 0.85rem; background: white; padding: 1rem; box-shadow: 0 4px 14px rgb(25 56 97 / 5%); }
+.dashboard-stats > a { color: inherit; text-decoration: none; transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease; }
+.dashboard-stats > a:hover, .dashboard-stats > a:focus-visible { border-color: #3974b6; box-shadow: 0 6px 18px rgb(25 56 97 / 12%); transform: translateY(-1px); }
 .dashboard-stats span { color: var(--muted); font-size: 0.78rem; font-weight: 600; }
 .dashboard-stats strong { color: var(--primary); font-size: 1.6rem; letter-spacing: -0.04em; }
 .dashboard-panel { min-width: 0; }
@@ -1237,8 +1251,11 @@ select:focus-visible {
 .booking-heading { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
 .booking-heading h3 { color: #173a6b; font-size: 0.97rem; font-weight: 700; }
 .dashboard-link-row { margin: -0.25rem 0 0.25rem; }
-.hire-search-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: end; gap: 0.85rem; margin-bottom: 1rem; border: 1px solid #dce6f1; border-radius: 0.9rem; background: var(--surface); padding: 1rem; }
-.hire-search-form .btn { justify-content: center; min-height: 2.8rem; }
+.hire-search-toggle { display: none; }
+.hire-search-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: end; gap: clamp(0.55rem, 1vw, 0.8rem); margin-bottom: 1rem; border: 1px solid #dce6f1; border-radius: 0.85rem; background: var(--surface); padding: clamp(0.7rem, 1.2vw, 0.9rem); }
+.hire-search-form .field { gap: 0.35rem; color: #51647d; font-size: clamp(0.72rem, 0.68rem + 0.12vw, 0.76rem); font-weight: 650; }
+.hire-search-form .field input, .hire-search-form .field select { min-height: 3rem; border-radius: 0.65rem; padding-inline: 0.75rem; font-size: 1rem; }
+.hire-search-form .btn { justify-content: center; min-height: 3rem; border-radius: 0.65rem; padding-inline: 1rem; font-size: 0.92rem; }
 .hire-contact-links { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.8rem; }
 .hire-contact-links a, .hire-profile-contact a { color: #176148; font-size: 0.85rem; font-weight: 700; text-decoration: none; }
 .hire-contact-links a { border: 1px solid #c7e6d7; border-radius: 999px; background: #effaf4; padding: 0.45rem 0.75rem; }
@@ -1273,12 +1290,23 @@ select:focus-visible {
 .car-profile-description p { margin-top: 0.4rem; color: #425b78; font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; }
 .dashboard-form .field input[type="file"] { min-height: 3.2rem; padding: 0.45rem; }
 @media (max-width: 760px) {
-  .hire-search-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hire-search-toggle { display: flex; width: 100%; align-items: center; justify-content: center; gap: 0.55rem; min-height: 2.9rem; margin: 0.5rem 0 1rem; border: 1px solid #c8d8eb; border-radius: 0.8rem; background: var(--surface); color: #173e78; font: inherit; font-weight: 700; cursor: pointer; box-shadow: 0 5px 14px rgb(23 62 120 / 7%); }
+  .hire-search-toggle:hover { border-color: #9fb8d7; background: #f7faff; }
+  .hire-search-form { display: none; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: -0.25rem; }
+  .hire-search-shell.is-expanded .hire-search-form { display: grid; }
   .dashboard-shell { grid-template-columns: 1fr; gap: 0.75rem; }
   .dashboard-section-sidebar { display: none; }
   .admin-layout { grid-template-columns: 1fr; gap: 1rem; }
   .dashboard-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .hire-listings { grid-template-columns: 1fr; }
+  .hire-card { padding: 1rem; }
+  .hire-card-top { align-items: flex-start; }
+  .hire-card h2 { font-size: 1.05rem; }
+  .hire-card .hire-model { margin-top: 0.25rem; font-size: 0.85rem; }
+  .hire-card-bottom { margin-top: 0.8rem; padding-top: 0.7rem; }
+  .hire-card-action { min-height: 2.8rem; margin-top: 0.7rem; }
+  .hire-contact-links { gap: 0.45rem; margin-top: 0.65rem; }
+  .hire-contact-links a { padding: 0.38rem 0.65rem; font-size: 0.8rem; }
   .dashboard-list-item { align-items: stretch; flex-direction: column; }
 }
 @media (max-width: 520px) {
@@ -1299,6 +1327,55 @@ select:focus-visible {
 }
 
 
+/* Car hire uses one spacing rhythm instead of stacking shared panel margins. */
+.car-hire-page { gap: 1rem; align-content: start; }
+.car-hire-page > .dashboard-intro { margin: 0; }
+.car-hire-page .page-title { margin: 0.25rem 0 0; }
+.car-hire-page .dashboard-intro > p:last-child { margin-top: 0.5rem; font-size: 0.92rem; line-height: 1.5; }
+.car-hire-page .hire-search-form { margin: 0; }
+.hire-results { display: grid; min-width: 0; gap: 0.75rem; }
+.car-hire-page .results-bar { margin: 0 !important; }
+.car-hire-page .results-bar > p:first-child { border: 0; border-radius: 0; background: none; padding: 0; color: var(--muted) !important; font-size: 0.8rem; }
+.hire-listings > .hire-card { display: flex; min-width: 0; flex-direction: column; margin: 0; padding: 1rem; }
+.hire-card > .hire-card-top { align-items: flex-start; gap: 0.5rem; }
+.hire-card-top > div { min-width: 0; }
+.hire-card .dashboard-eyebrow { font-size: 0.62rem; line-height: 1.5; letter-spacing: 0.07em; overflow-wrap: anywhere; }
+.hire-card h2 { margin-top: 0.25rem; line-height: 1.25; overflow-wrap: anywhere; }
+.hire-card .status-badge { flex: none; padding: 0.25rem 0.5rem; font-size: 0.6rem; letter-spacing: 0.02em; }
+.hire-card > .hire-model { margin: 0.25rem 0 0.8rem; color: var(--muted); font-size: 0.82rem; line-height: 1.4; overflow-wrap: anywhere; }
+.hire-card > .hire-card-bottom { gap: 0.75rem; margin: auto 0 0; padding-top: 0.8rem; border-color: var(--line); }
+.hire-card-bottom > strong { display: grid; gap: 0.1rem; min-width: 0; font-size: 1.05rem; line-height: 1.25; white-space: nowrap; }
+.hire-card .hire-card-action { flex: none; width: auto; min-height: 2.75rem; margin: 0; padding: 0 0.8rem; border-radius: 0.6rem; font-size: 0.82rem; box-shadow: 0 3px 8px rgb(23 62 120 / 14%); }
+.hire-card > .hire-contact-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; margin-top: 0.75rem; }
+.hire-card .hire-contact-links a { display: flex; min-width: 0; min-height: 2.75rem; align-items: center; justify-content: center; gap: 0.35rem; border-radius: 0.6rem; padding: 0.35rem; font-size: 0.77rem; }
+.hire-contact-links svg { flex: none; }
+.hire-search-toggle:focus-visible, .hire-contact-links a:focus-visible { outline: 3px solid #6b9bd0; outline-offset: 3px; }
+html[data-theme="dark"] .hire-card-bottom > strong { color: var(--foreground); }
+html[data-theme="dark"] .hire-card .hire-contact-links a { border-color: #345449; background: #203b2c; color: #a5dfbd; }
+@media (max-width: 760px) {
+  .car-hire-page { gap: 0.9rem; }
+  .car-hire-page .page-title { font-size: clamp(1.45rem, 5.8vw, 1.85rem); }
+  .car-hire-page .dashboard-intro > p:last-child { margin-top: 0.45rem; font-size: 0.86rem; }
+  .car-hire-page .hire-search-shell { display: grid; gap: 0.65rem; min-width: 0; }
+  .car-hire-page .hire-search-toggle { justify-content: flex-start; min-height: 2.9rem; gap: 0.6rem; margin: 0; padding: 0.65rem 0.85rem; font-size: 0.88rem; box-shadow: 0 2px 8px rgb(23 62 120 / 5%); }
+  .hire-search-chevron { margin-left: auto; transition: transform 150ms ease; }
+  .is-expanded .hire-search-chevron { transform: rotate(180deg); }
+  .car-hire-page .hire-search-form { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; padding: 0.85rem; }
+  .hire-search-form > .field { min-width: 0; }
+  .hire-search-form .hire-search-keyword, .hire-search-form > .btn { grid-column: 1 / -1; }
+  .hire-search-form .field input, .hire-search-form .field select { width: 100%; min-width: 0; min-height: 2.75rem; padding-inline: 0.55rem; }
+  .hire-listings { gap: 0.75rem; }
+  .hire-listings > .hire-card { padding: 0.9rem; border-radius: 0.85rem; }
+  .hire-card h2 { font-size: 1.06rem; }
+}
+@media (max-width: 360px) {
+  .hire-card > .hire-card-bottom { gap: 0.5rem; }
+  .hire-card-bottom > strong { font-size: 0.92rem; }
+  .hire-card .status-badge { font-size: 0.55rem; padding-inline: 0.4rem; }
+  .hire-card .hire-contact-links a { gap: 0.25rem; font-size: 0.72rem; }
+  .hire-card .hire-card-action { gap: 0.25rem; padding-inline: 0.55rem; font-size: 0.75rem; }
+}
+
 /* Role-aware navigation and profile settings. */
 .site-header-inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin-inline: auto; }
 .brand-link { display: inline-flex; align-items: center; }
@@ -1306,7 +1383,7 @@ select:focus-visible {
 .primary-navigation { display: flex; align-items: center; justify-content: flex-end; gap: clamp(0.65rem, 1.6vw, 1.25rem) !important; }
 .nav-menu-groups { display: none; }
 .primary-navigation > a { color: #3b506d; font-size: 0.86rem; font-weight: 650; text-decoration: none; }
-.primary-navigation > a[aria-current="location"] { color: var(--primary); }
+.primary-navigation > a[aria-current="location"] { color: var(--primary); background: #edf3fa; }
 .nav-account-actions { display: flex; align-items: center; gap: 0.7rem; }
 .nav-user-name { max-width: 10rem; overflow: hidden; color: #536781; font-size: 0.78rem; text-overflow: ellipsis; white-space: nowrap; }
 .settings-icon-link { display: inline-grid; width: 2.4rem; height: 2.4rem; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--primary); }
@@ -1405,6 +1482,7 @@ html[data-theme="dark"] .dashboard-help,
 html[data-theme="dark"] .field-hint { color: #b8c7d7 !important; }
 html[data-theme="dark"] .home-search-dialog-card { background: var(--surface); color: var(--foreground); }
 html[data-theme="dark"] .site-header nav a:hover { color: #b7d4ff !important; }
+html[data-theme="dark"] .hire-search-toggle { border-color: var(--line); background: var(--surface); color: #b7d4ff; }
 
 
 
@@ -1437,3 +1515,65 @@ html[data-theme="dark"] .nav-profile-picture { border-color: var(--line); backgr
 .company-staff-dashboard a[href^="/operator/profiles/"],
 .company-staff-dashboard a[href^="/operator/trips/"],
 .company-staff-dashboard a[href^="/operator/vehicles/"] { display: none !important; }
+
+/* A personal starting point after sign-in. */
+.account-home { display: grid; gap: 1.25rem; }
+.account-home > .panel { margin: 0 !important; }
+.account-welcome { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2rem; border: 1px solid var(--line); border-radius: 1.25rem; background: linear-gradient(115deg, var(--surface), #e9f1fc); padding: clamp(1.4rem, 3vw, 2.25rem); }
+.account-welcome h1 { margin-top: 0.65rem; color: var(--foreground); font-size: clamp(1.8rem, 3.1vw, 2.65rem); line-height: 1.15; font-weight: 750; letter-spacing: -0.045em; overflow-wrap: anywhere; }
+.welcome-dot { color: #c34b1b; }
+.account-welcome-copy { max-width: 38rem; margin-top: 0.8rem; color: var(--muted); font-size: clamp(0.9rem, 1.2vw, 1rem); line-height: 1.65; }
+.account-profile-link { display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 1rem; color: var(--primary); font-size: 0.78rem; font-weight: 600; text-decoration: none; }
+.account-profile-link:hover { text-decoration: underline; }
+.account-fleet-summary { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0.9rem; min-width: 15rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--surface); padding: 1.2rem; }
+.account-summary-icon { display: grid; width: 3rem; height: 3rem; place-items: center; border-radius: 0.8rem; background: #edf3fa; color: #23578e; }
+.account-fleet-summary strong { display: block; font-size: 1.8rem; font-weight: 750; line-height: 1.15; }
+.account-fleet-summary div > span { color: var(--muted); font-size: 0.75rem; }
+.account-fleet-summary > a { display: flex; grid-column: 1 / -1; align-items: center; gap: 0.45rem; border-top: 1px solid var(--line); padding-top: 0.85rem; color: var(--muted); font-size: 0.74rem; text-decoration: none; }
+.account-fleet-summary > a > svg { margin-left: auto; }
+.request-dot { width: 0.4rem; height: 0.4rem; flex: none; border-radius: 50%; background: #348068; }
+.account-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 0.5rem; }
+.account-section-heading h2 { color: var(--foreground); font-size: 1.1rem; font-weight: 700; letter-spacing: -0.025em; }
+.account-section-heading > span { color: var(--muted); font-size: 0.75rem; }
+.account-quick-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.85rem; }
+.account-action { position: relative; display: flex; flex-direction: column; align-items: flex-start; min-width: 0; border: 1px solid var(--line); border-radius: 1rem; background: var(--surface); padding: 1.2rem; color: var(--foreground); text-decoration: none; transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease; }
+.account-action:hover { transform: translateY(-3px); border-color: #94b0d1; box-shadow: 0 10px 24px rgb(26 55 92 / 9%); }
+.account-action-icon { display: grid; width: 2.7rem; height: 2.7rem; margin-bottom: 1.15rem; place-items: center; border-radius: 0.8rem; background: #edf3fa; color: #285e94; }
+.account-action-arrow { position: absolute; right: 1.15rem; top: 1.3rem; color: #7f95ae; }
+.account-action strong { font-size: 0.95rem; font-weight: 700; line-height: 1.4; }
+.account-action-description { margin-top: 0.4rem; color: var(--muted); font-size: 0.79rem; line-height: 1.6; }
+.account-action.is-featured { border-color: #173e78; background: #173e78; color: #fff; }
+.account-action.is-featured .account-action-icon { background: rgb(255 255 255 / 13%); color: #fff; }
+.account-action.is-featured .account-action-description, .account-action.is-featured .account-action-arrow { color: #d1e1f5; }
+.account-application-history { padding: 1rem 1.25rem !important; }
+.account-application-history summary { color: var(--muted); font-size: 0.85rem; font-weight: 650; cursor: pointer; }
+.account-application-history summary > span { display: inline-grid; min-width: 1.5rem; min-height: 1.5rem; margin-left: 0.4rem; place-items: center; border-radius: 50%; background: var(--background); font-size: 0.72rem; }
+.account-application-history[open] .dashboard-list { margin-top: 1rem; }
+.site-header .primary-navigation > a { padding: 0.55rem 0.7rem; border-radius: 0.6rem; font-size: 0.82rem; }
+.site-header .nav-profile-link { padding: 0.25rem; }
+.nav-account-actions { gap: 0.55rem; }
+.nav-user-name { max-width: 8rem; }
+html[data-theme="dark"] .account-welcome { background: linear-gradient(115deg, var(--surface), #22364f); }
+html[data-theme="dark"] .account-action-icon, html[data-theme="dark"] .account-summary-icon { background: #263b52; color: #b7d4f8; }
+html[data-theme="dark"] .primary-navigation > a[aria-current="location"] { background: #263b52; }
+@media (max-width: 960px) {
+  .account-quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .account-welcome { gap: 1.25rem; }
+  .account-fleet-summary { min-width: 13rem; }
+}
+@media (max-width: 760px) {
+  .site-logo { width: 8.75rem; height: 2.25rem; }
+  .site-header > div { min-height: 64px; }
+  .account-welcome { grid-template-columns: 1fr; }
+  .account-fleet-summary { width: 100%; }
+  .account-action { padding: 1rem; }
+  .account-action strong { font-size: 0.88rem; }
+  .account-action-description { font-size: 0.76rem; }
+  .account-action-icon { margin-bottom: 0.85rem; }
+}
+@media (max-width: 400px) {
+  .account-quick-actions { gap: 0.6rem; }
+  .account-section-heading > span { display: none; }
+  .account-action { padding: 0.85rem; }
+  .account-action-arrow { right: 0.75rem; top: 1rem; }
+}

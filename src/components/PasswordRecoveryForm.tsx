@@ -63,10 +63,16 @@ export function ResetPasswordForm() {
     setMessage("");
     const data = new FormData(event.currentTarget);
     const token = new URLSearchParams(window.location.search).get("token") ?? "";
+    const password = String(data.get("password") ?? "");
+    if (password !== String(data.get("confirmPassword") ?? "")) {
+      setError("The passwords do not match.");
+      setPending(false);
+      return;
+    }
 
     try {
       const result = await authClient.resetPassword({
-        newPassword: String(data.get("password") ?? ""),
+        newPassword: password,
         token,
       });
       if (result.error) {
@@ -86,6 +92,10 @@ export function ResetPasswordForm() {
       <label className="field">
         <span>New password</span>
         <input name="password" type="password" autoComplete="new-password" minLength={8} required disabled={pending} />
+      </label>
+      <label className="field">
+        <span>Re-enter new password</span>
+        <input name="confirmPassword" type="password" autoComplete="new-password" minLength={8} required disabled={pending} />
       </label>
       {error && <p className="alert alert-error" role="alert">{error}</p>}
       {message && <p className="alert" role="status">{message} <Link href="/sign-in">Sign in</Link></p>}

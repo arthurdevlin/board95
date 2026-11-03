@@ -73,7 +73,7 @@ export default function BookingRequestForm({
                 </label>
                 <label className="field">
                   <span>Mobile number</span>
-                  <input name="phone" type="tel" autoComplete="tel" inputMode="tel" placeholder="0991 234 567" required pattern="(?:[+]265[ ]?9[0-9]{2}[ ]?[0-9]{3}[ ]?[0-9]{3}|09[0-9]{2}[ ]?[0-9]{3}[ ]?[0-9]{3})" title="Use a Malawi mobile number, such as 0991 234 567 or +265 991 234 567" disabled={pending} />
+                  <input name="phone" type="tel" autoComplete="tel" inputMode="tel" placeholder="0991 234 567" required pattern="(?:[+]265[ ]?(?:8|9|2)[0-9]{2}[ ]?[0-9]{3}[ ]?[0-9]{3}|0(?:8|9|2)[0-9]{2}[ ]?[0-9]{3}[ ]?[0-9]{3})" title="Use a Malawi mobile number, such as 0991 234 567 or +265 991 234 567" disabled={pending} />
                 </label>
                 <label className="field">
                   <span>Email <em>(optional)</em></span>

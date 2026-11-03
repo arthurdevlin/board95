@@ -1,10 +1,11 @@
 "use client";
 
+import Image from "next/image";
+import { Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import SignOutButton from "@/components/SignOutButton";
-import SettingsIcon from "@/components/SettingsIcon";
 import type { NavigationEntry } from "@/components/DashboardSectionNavigation";
 
 type MenuLink = { href: string; label: string };
@@ -46,10 +47,10 @@ export default function RoleNavigation({ links, groups = [], signedIn, name, ima
         {groups.length > 0 && <div className="nav-menu-groups"><p className="nav-menu-heading">Workspace sections</p><MenuItems items={groups} activeLocation={activeLocation} onNavigate={navigateTo}/></div>}
         {signedIn ? <div className="nav-account-actions">
           <Link href="/settings" className="nav-profile-link" aria-label="Open settings" title="Profile and settings" onClick={() => setOpen(false)}>
-            <span className="nav-profile-picture">{image ? <img src={image} alt=""/> : <span aria-hidden="true">{name?.slice(0, 1).toUpperCase()}</span>}</span>
+            <span className="nav-profile-picture">{image ? <Image src={image} width={32} height={32} unoptimized alt=""/> : <span aria-hidden="true">{name?.slice(0, 1).toUpperCase()}</span>}</span>
             <span className="nav-user-name">{name}</span>
           </Link>
-          <Link href="/settings" className="settings-icon-link" aria-label="Settings" title="Settings" onClick={() => setOpen(false)}><SettingsIcon/></Link>
+          <Link href="/settings" className="settings-icon-link" aria-label="Settings" title="Settings" onClick={() => setOpen(false)}><Settings size={18} strokeWidth={1.9} aria-hidden="true"/></Link>
           <SignOutButton />
         </div> : <Link href="/sign-in" className="chip">Sign in</Link>}
       </nav>

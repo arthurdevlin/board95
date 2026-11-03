@@ -18,6 +18,37 @@ enum City {
   Mzuzu
 }
 
+enum CarHireDistrict {
+  BALAKA
+  BLANTYRE
+  CHIKWAWA
+  CHIRADZULU
+  CHITIPA
+  DEDZA
+  DOWA
+  KARONGA
+  KASUNGU
+  LIKOMA
+  LILONGWE
+  MACHINGA
+  MANGOCHI
+  MCHINJI
+  MULANJE
+  MWANZA
+  MZIMBA
+  NENO
+  NKHATABAY
+  NKHOTAKOTA
+  NSANJE
+  NTCHEU
+  NTCHISI
+  PHALOMBE
+  RUMPHI
+  SALIMA
+  THYOLO
+  ZOMBA
+}
+
 enum TransportType {
   BUS
   TAXI
@@ -188,6 +219,8 @@ model Operator {
   trips           Trip[]
   departurePoints DeparturePoint[]
   members         OperatorMember[]
+
+  @@index([ownerId])
 }
 
 model Vehicle {
@@ -199,6 +232,8 @@ model Vehicle {
   seats      Int
 
   trips Trip[]
+
+  @@index([operatorId])
 }
 
 model DeparturePoint {
@@ -238,6 +273,10 @@ model Trip {
 
   // Speeds up the search on /transport.
   @@index([origin, destination, departureAt])
+  @@index([departureAt, id])
+  @@index([operatorId, departureAt])
+  @@index([vehicleId, departureAt])
+  @@index([departurePointId])
 }
 
 model Booking {
@@ -265,6 +304,9 @@ model Booking {
   @@index([userId])
   @@index([tripId])
   @@index([guestPhone, userId])
+  @@index([createdAt, id])
+  @@index([status, createdAt, id])
+  @@index([userId, archivedAt, createdAt])
 }
 
 model CarHireListing {
@@ -276,7 +318,7 @@ model CarHireListing {
   vehicleType  CarHireVehicleType @default(OTHER)
   lorryCapacityTons Int?
   contactPhone String?
-  city         City
+  district     CarHireDistrict
   dailyRateMWK Int
   description  String?
   photoUrl     String?
@@ -285,7 +327,9 @@ model CarHireListing {
   requests     CarHireRequest[]
 
   @@index([ownerId])
-  @@index([city, available])
+  @@index([district, available])
+  @@index([available, createdAt, id])
+  @@index([ownerId, createdAt, id])
 }
 
 model Application {
@@ -345,6 +389,8 @@ model RateLimitBucket {
   attempts  Int
   resetAt   DateTime
   updatedAt DateTime @updatedAt
+
+  @@index([resetAt])
 }
 
 model EmailDelivery {

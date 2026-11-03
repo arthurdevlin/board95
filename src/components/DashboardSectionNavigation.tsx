@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 export type NavigationEntry = {
   label: string;
@@ -16,6 +17,7 @@ function NavigationList({ entries, activeHref, onNavigate }: { entries: Navigati
 
 export default function DashboardSectionNavigation({ entries, label = "Workspace sections" }: { entries: NavigationEntry[]; label?: string }) {
   const [activeHref, setActiveHref] = useState("");
+  const searchParams = useSearchParams();
   useEffect(() => {
     const updateActiveLink = () => {
       const hash = window.location.hash || "#overview";
@@ -30,7 +32,7 @@ export default function DashboardSectionNavigation({ entries, label = "Workspace
     updateActiveLink();
     window.addEventListener("hashchange", updateActiveLink);
     return () => window.removeEventListener("hashchange", updateActiveLink);
-  }, []);
+  }, [searchParams]);
 
   const navigateTo = (href: string) => {
     setActiveHref(href);

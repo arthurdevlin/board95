@@ -1,4 +1,4 @@
-import { formatDate, formatMWK } from "@/lib/format";
+import { formatDate, formatMWK, formatTimestamp } from "@/lib/format";
 import type { TripListing } from "@/lib/trips";
 import BookingRequestForm from "@/components/BookingRequestForm";
 
@@ -49,7 +49,7 @@ export default function TripCard({
       </div>
 
       <p className="trip-point">{trip.departurePoint}</p>
-      <p className="field-hint">Posted {new Intl.DateTimeFormat("en-MW", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Blantyre" }).format(trip.createdAt)}</p>
+      <p className="field-hint">Posted {formatTimestamp(trip.createdAt)}</p>
 
       <details className="trip-disclosure">
         <summary>

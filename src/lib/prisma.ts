@@ -3,7 +3,10 @@ import { PrismaClient } from "@/generated/prisma/client";
 
 // Next.js dev mode reloads files often. Without this "global" trick, every
 // reload would open a new database connection and we'd run out of them.
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+const globalForPrisma = globalThis as unknown as {
+  prisma?: PrismaClient;
+  prismaClientConstructor?: typeof PrismaClient;
+};
 
 function createClient() {
   const connectionString = process.env.DATABASE_URL;
@@ -15,14 +18,15 @@ function createClient() {
   return new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 }
 
-// A schema change can add delegates while Next.js is running. During hot reload,
-// the global singleton may still point at a PrismaClient generated from the old
-// schema, so replace it when it does not expose the current model delegates.
+// During hot reload, replace a singleton created by a different generated client.
 const cachedPrisma = globalForPrisma.prisma;
-const prisma = cachedPrisma && typeof cachedPrisma.operatorMember !== "undefined"
+const prisma = cachedPrisma && globalForPrisma.prismaClientConstructor === PrismaClient
   ? cachedPrisma
   : createClient();
 
 export { prisma };
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+  globalForPrisma.prismaClientConstructor = PrismaClient;
+}

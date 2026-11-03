@@ -15,6 +15,8 @@ export const auth = betterAuth({
     // use the optional Resend integration without blocking account creation.
     requireEmailVerification: false,
     minPasswordLength: 8,
+    maxPasswordLength: 128,
+    revokeSessionsOnPasswordReset: true,
     sendResetPassword: async ({ user, url }) => {
       const { sendBoard95Email } = await import("@/lib/email");
       await sendBoard95Email({ to: user.email, subject: "Reset your Board95 password", lines: ["We received a request to reset your password. If you did not make this request, you can ignore this email."], action: { label: "Reset password", href: url } });

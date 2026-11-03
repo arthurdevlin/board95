@@ -38,15 +38,21 @@ export default function AuthForm({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    setPending(true);
 
     const form = event.currentTarget;
     const formData = new FormData(form);
     const email = formData.get("email")?.toString().trim() ?? "";
     const password = formData.get("password")?.toString() ?? "";
+    const confirmPassword = formData.get("confirmPassword")?.toString() ?? "";
     const name = formData.get("name")?.toString().trim() ?? "";
     const businessName = formData.get("businessName")?.toString().trim() ?? name;
     const phone = formData.get("phone")?.toString().trim() ?? "";
+
+    if (mode === "sign-up" && password !== confirmPassword) {
+      setError("The passwords do not match.");
+      return;
+    }
+    setPending(true);
 
     try {
       const { error: authError } = mode === "sign-up"
@@ -65,7 +71,7 @@ export default function AuthForm({
           if (application.error) {
             router.push("/account?application=retry");
           } else {
-            router.push(accountType === "TAXI_OWNER" ? "/operator" : "/car-hire/dashboard");
+            router.push("/account");
           }
         } catch {
           // Account creation already succeeded; direct the user to the account page to retry the application.
@@ -151,6 +157,11 @@ export default function AuthForm({
             </div>
             {mode === "sign-up" && <p className="field-hint">At least 8 characters.</p>}
           </div>
+
+          {mode === "sign-up" && <div className="field">
+            <label htmlFor="confirmPassword">Re-enter password</label>
+            <input id="confirmPassword" name="confirmPassword" type="password" autoComplete="new-password" required minLength={8} disabled={pending} />
+          </div>}
 
           <button type="submit" className="btn btn-primary btn-block" disabled={pending}>
             {pending ? mode === "sign-up" ? "Creating account…" : "Signing in…" : mode === "sign-up" ? "Create account" : "Sign in"}

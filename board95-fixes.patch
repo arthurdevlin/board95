@@ -1,0 +1,102 @@
+diff --git a/.gitignore b/.gitignore
+index 1ced7c3..c5298f7 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,4 +1,4 @@
+-6# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
++# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+ 
+ # dependencies
+ /node_modules
+@@ -32,6 +32,7 @@ yarn-error.log*
+ 
+ # env files (can opt-in for committing if needed)
+ .env*
++!.env.example
+ 
+ # vercel
+ .vercel
+@@ -44,3 +45,7 @@ prisma/migrations
+ !prisma/migrations/
+ !prisma/migrations/**
+ 
++
++# generated / uploaded files (rebuilt or stored elsewhere)
++/src/generated/
++/public/uploads/
+diff --git a/src/components/ThemeToggle.tsx b/src/components/ThemeToggle.tsx
+index 78288ba..97e0195 100644
+--- a/src/components/ThemeToggle.tsx
++++ b/src/components/ThemeToggle.tsx
+@@ -1,13 +1,24 @@
+ "use client";
+-import { useEffect, useState } from "react";
++import { useSyncExternalStore } from "react";
++
++// Subscribe to <html data-theme> changes so React reads the theme from the DOM
++// (an external system) instead of copying it into state inside an effect.
++function subscribe(callback: () => void) {
++  const observer = new MutationObserver(callback);
++  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
++  return () => observer.disconnect();
++}
++
+ export default function ThemeToggle() {
+-  const [dark, setDark] = useState(false);
+-  useEffect(() => setDark(document.documentElement.dataset.theme === "dark"), []);
++  const dark = useSyncExternalStore(
++    subscribe,
++    () => document.documentElement.dataset.theme === "dark",
++    () => false, // server snapshot
++  );
+   function toggle() {
+-    const next = !dark ? "dark" : "light";
++    const next = dark ? "light" : "dark";
+     document.documentElement.dataset.theme = next;
+     window.localStorage.setItem("board95-theme", next);
+-    setDark(next === "dark");
+   }
+   return <button type="button" className="theme-toggle" role="switch" aria-checked={dark} onClick={toggle}><span className="theme-toggle-track"><span className="theme-toggle-thumb"/></span><span>{dark ? "Dark mode on" : "Dark mode off"}</span></button>;
+ }
+diff --git a/src/lib/actions.ts b/src/lib/actions.ts
+index 9564d55..fc1782d 100644
+--- a/src/lib/actions.ts
++++ b/src/lib/actions.ts
+@@ -459,7 +459,7 @@ export async function updateBookingStatusAction(formData: FormData) {
+       id: bookingId,
+       ...(session.user.role === "ADMIN" ? {} : session.user.role === "OWNER" ? { trip: { operator: { ownerId: session.user.id, active: true, verified: true } } } : { trip: { operatorId: { in: memberships.map((membership) => membership.operatorId) } } }),
+     },
+-    select: { id: true, tripId: true, status: true, seats: true, reviewedByAdmin: true, trip: { select: { departureAt: true, seatsTotal: true } } },
++    select: { id: true, userId: true, tripId: true, status: true, seats: true, reviewedByAdmin: true, trip: { select: { departureAt: true, seatsTotal: true } } },
+   });
+   if (!booking) throw new Error("Booking not found.");
+   const nextStatus = status as "ACCEPTED" | "DECLINED" | "CANCELLED" | "COMPLETED";
+@@ -926,10 +926,15 @@ export async function requestCarHireAction(_previous: CarHireRequestState, formD
+   } catch {
+     return { status: "error", message: "We could not save the request. Refresh and try again." };
+   }
+-  if (outcome.kind === "unavailable") return { status: "error", message: "This vehicle is no longer available." };
+-  if (outcome.kind === "self-request") return { status: "error", message: "You cannot request your own vehicle." };
+-  if (outcome.kind === "invalid-total") return { status: "error", message: "This rental total is outside the supported range." };
+-  if (outcome.kind === "conflict") return { status: "error", message: "Those dates have just been taken. Choose another period." };
++  if (outcome.kind !== "created") {
++    const messages = {
++      unavailable: "This vehicle is no longer available.",
++      "self-request": "You cannot request your own vehicle.",
++      "invalid-total": "This rental total is outside the supported range.",
++      conflict: "Those dates have just been taken. Choose another period.",
++    } as const;
++    return { status: "error", message: messages[outcome.kind] };
++  }
+   const { request, listing, totalMWK } = outcome;
+   const reference = request.id.slice(-8).toUpperCase();
+   await Promise.all([
+@@ -970,7 +975,7 @@ export async function cancelCarHireRequestAction(formData: FormData) {
+   if (!request || request.startsAt <= new Date()) throw new Error("Only future rental requests can be cancelled.");
+   const cancelled = await prisma.carHireRequest.updateMany({ where: { id: request.id, passengerId: session.user.id, status: request.status }, data: { status: "CANCELLED" } });
+   if (cancelled.count !== 1) throw new Error("This rental request has already changed.");
+-  await sendBoard95Email({ to: request.listing.owner.email, subject: "Car-hire request cancelled", lines: [`${request.guestName} cancelled the request for ${request.listing.name}.`, `Dates: ${request.startsAt.toISOString().slice(0, 10)} to ${request.endsAt.toISOString().slice(0, 10)}.`] });
++  await sendBoard95Email({ to: request.listing.owner.email, subject: "Car-hire request cancelled", lines: [`${request.guestName} cancelled the request for ${request.listing.name}.`, `Dates: ${toMalawiDate(request.startsAt)} to ${toMalawiDate(request.endsAt)}.`] });
+   revalidatePath("/account");
+   revalidatePath("/car-hire/dashboard");
+ }

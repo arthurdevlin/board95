@@ -6,9 +6,10 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import RoleNavigation from "@/components/RoleNavigation";
 import type { NavigationEntry } from "@/components/DashboardSectionNavigation";
+import { operatorWorkspace } from "@/lib/operator-workspace";
 
 export default function Header() {
-  return <header className="site-header"><div className="site-header-inner"><Link href="/" className="brand-link"><Image src="/b95logo.png" alt="Board95" width={150} height={20} className="site-logo" loading="eager"/></Link><Suspense fallback={<span className="user-menu-placeholder"/>}><HeaderMenu/></Suspense></div></header>;
+  return <header className="site-header"><div className="site-header-inner"><Link href="/" className="brand-link"><Image src="/b95logo.png" alt="Board95" width={160} height={40} className="site-logo" loading="eager"/></Link><Suspense fallback={<span className="user-menu-placeholder"/>}><HeaderMenu/></Suspense></div></header>;
 }
 
 async function HeaderMenu() {
@@ -25,7 +26,7 @@ async function HeaderMenu() {
         { label: "Account applications", href: "/admin#account-applications" },
         { label: "User accounts", href: "/admin#user-accounts" },
       ] },
-      { label: "Taxi and bus", children: [
+      { label: "Transport", children: [
         { label: "Bus companies", href: "/admin#bus-companies" },
         { label: "Operator applications", href: "/admin#operator-applications" },
         { label: "Pending bookings", href: "/admin#pending-bookings" },
@@ -41,16 +42,15 @@ async function HeaderMenu() {
     ];
   } else if (session.user.role === "OWNER") {
     const operators = await prisma.operator.findMany({where:{ownerId:session.user.id},select:{id:true,name:true,kind:true,active:true,verified:true}});
-    const kinds = new Set(operators.map((operator) => operator.kind));
-    const label = kinds.size > 1 ? "Operator dashboard" : kinds.has("BUS_COMPANY") ? "Bus dashboard" : "Taxi dashboard";
-    links = [{href:"/operator",label}];
+    const workspace = operatorWorkspace(operators.map((operator) => operator.kind));
+    links = [{href:"/operator",label: workspace.title}];
     const workspaceSections: NavigationEntry[] = [
       { label: "Overview", href: "/operator#overview" },
       ...(operators.length ? [
-      { label: "Operator workspaces", children: operators.map((operator) => ({ label: operator.name, children: [
-        { label: "Workspace summary", href: `/operator#operator-profile-${operator.id}` },
+      { label: `${workspace.name} workspaces`, children: operators.map((operator) => ({ label: operator.name, children: [
+        { label: `${operator.kind === "BUS_COMPANY" ? "Bus" : "Taxi"} summary`, href: `/operator#operator-profile-${operator.id}` },
         { label: "Trip schedule", href: `/operator#operator-trips-${operator.id}` },
-        { label: "Vehicles", href: `/operator#operator-vehicles-${operator.id}` },
+        { label: operator.kind === "BUS_COMPANY" ? "Buses" : "Taxis", href: `/operator#operator-vehicles-${operator.id}` },
         ...(operator.active && operator.verified ? [{ label: "Add a departure", href: `/operator#operator-add-trip-${operator.id}` }] : []),
       ] })) },
       { label: "Bookings", children: [
@@ -59,7 +59,7 @@ async function HeaderMenu() {
       ] },
       ] : []),
     ];
-    groups = [{ label: "Taxi and bus", children: workspaceSections }];
+    groups = [{ label: workspace.workspace, children: workspaceSections }];
   } else if (session.user.role === "CAR_HIRER") {
     links = [{href:"/car-hire/dashboard",label:"My vehicles"}, {href:"/car-hire/dashboard#rental-requests",label:"Rental requests"}];
     groups = [{ label: "Car hire", children: [
@@ -75,15 +75,14 @@ async function HeaderMenu() {
   } else if (session.user.role === "CUSTOMER") {
     const memberships = await prisma.operatorMember.findMany({ where: { userId: session.user.id, operator: { kind: "BUS_COMPANY", active: true } }, select: { operatorId: true, role: true, operator: { select: { name: true, active: true, verified: true } } } });
     if (memberships.length) {
-      const canManageTrips = memberships.some((membership) => membership.role === "ADMIN");
       links = [{href:"/operator",label:"Bus dashboard"}];
       groups = [{ label: "Bus workspace", children: [
         { label: "Overview", href: "/operator#overview" },
         { label: "Companies", children: memberships.map((membership) => ({ label: membership.operator.name, children: [
-          { label: "Workspace summary", href: `/operator#operator-profile-${membership.operatorId}` },
+          { label: "Bus summary", href: `/operator#operator-profile-${membership.operatorId}` },
           { label: "Trip schedule", href: `/operator#operator-trips-${membership.operatorId}` },
-          { label: "Vehicles", href: `/operator#operator-vehicles-${membership.operatorId}` },
-          ...(canManageTrips && membership.operator.active && membership.operator.verified ? [{ label: "Add a departure", href: `/operator#operator-add-trip-${membership.operatorId}` }] : []),
+          { label: "Buses", href: `/operator#operator-vehicles-${membership.operatorId}` },
+          ...(membership.role === "ADMIN" && membership.operator.active && membership.operator.verified ? [{ label: "Add a departure", href: `/operator#operator-add-trip-${membership.operatorId}` }] : []),
         ] })) },
         { label: "Bookings", children: [
           { label: "Pending requests", href: "/operator#operator-bookings" },
@@ -96,5 +95,5 @@ async function HeaderMenu() {
   } else {
     links = [{href:"/transport",label:"Find transport"},{href:"/car-hire",label:"Car hire"},{href:"/account#my-bookings",label:"My bookings"}];
   }
-  return <RoleNavigation signedIn name={session.user.name} image={session.user.image} links={links} groups={groups}/>;
+  return <RoleNavigation signedIn name={session.user.name} image={session.user.image} links={[{href:"/account",label:"Home"}, ...links]} groups={groups.length ? [{label:"Home",href:"/account"}, ...groups] : groups}/>;
 }

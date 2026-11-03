@@ -2,6 +2,8 @@ import { CITIES, type City, type TransportType } from "@/lib/cities";
 import { dayRange, toMalawiDate, toMalawiTime } from "@/lib/dates";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
+import { parsePageParam, readPage } from "@/lib/pagination";
+import { cacheLife, cacheTag } from "next/cache";
 
 // What the UI needs to draw a card. We deliberately do NOT hand raw database
 // rows to components: if the table changes, only the mapper below changes.
@@ -104,9 +106,7 @@ export function parseFilters(params: RawParams): Filters {
 }
 
 export function parsePage(params: RawParams): number {
-  const value = first(params.page);
-  if (!value || !/^\d+$/.test(value)) return 1;
-  return Math.min(100_000, Math.max(1, Number(value) || 1));
+  return parsePageParam(params.page);
 }
 
 const SEARCH_PAGE_SIZE = 12;
@@ -122,7 +122,7 @@ export type TripSearchResult = {
 // filter in JavaScript: that gets slow as the table grows.
 export async function searchTrips(filters: Filters, requestedPage = 1): Promise<TripSearchResult> {
   const where: Prisma.TripWhereInput = {
-    operator: { active: true, verified: true },
+    operator: { active: true, verified: true, OR: [{ ownerId: null }, { owner: { active: true } }] },
   };
   if (filters.origin) where.origin = filters.origin;
   if (filters.destination) where.destination = filters.destination;
@@ -135,24 +135,21 @@ export async function searchTrips(filters: Filters, requestedPage = 1): Promise<
     where.departureAt = { gte: new Date() }; // no date picked: upcoming only
   }
 
-  const total = await prisma.trip.count({ where });
-  const pageCount = Math.max(1, Math.ceil(total / SEARCH_PAGE_SIZE));
-  const page = Math.min(requestedPage, pageCount);
-  const rows = await prisma.trip.findMany({
-    where,
-    select: tripSelect,
-    orderBy: { departureAt: "asc" },
-    skip: (page - 1) * SEARCH_PAGE_SIZE,
-    take: SEARCH_PAGE_SIZE,
-  });
+  const { total, page, rows } = await readPage(requestedPage, SEARCH_PAGE_SIZE,
+    () => prisma.trip.count({ where }),
+    (skip, take) => prisma.trip.findMany({ where, select: tripSelect, orderBy: [{ departureAt: "asc" }, { id: "asc" }], skip, take }),
+  );
   return { trips: rows.map(toListing), page, pageSize: SEARCH_PAGE_SIZE, total };
 }
 
 export async function getUpcomingTrips(limit: number): Promise<TripListing[]> {
+  "use cache";
+  cacheLife({ stale: 15, revalidate: 15, expire: 30 });
+  cacheTag("public-trips");
   const rows = await prisma.trip.findMany({
-    where: { operator: { active: true, verified: true }, departureAt: { gte: new Date() } },
+    where: { operator: { active: true, verified: true, OR: [{ ownerId: null }, { owner: { active: true } }] }, departureAt: { gte: new Date() } },
     select: tripSelect,
-    orderBy: { departureAt: "asc" },
+    orderBy: [{ departureAt: "asc" }, { id: "asc" }],
     take: limit,
   });
   return rows.map(toListing);
