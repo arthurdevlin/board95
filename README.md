@@ -9,7 +9,7 @@ Use Node.js 22.12 or newer in the 22.x line, or Node.js 24+, and PostgreSQL.
 1. Install dependencies with `npm ci`.
 2. Copy `.env.example` to `.env` and set `DATABASE_URL` and `BETTER_AUTH_SECRET`.
 3. Apply migrations to your development database with `npx prisma migrate deploy`.
-4. Generate the Prisma client with `npx prisma generate`.
+4. The Prisma client is generated automatically during installation and before development startup. To regenerate it manually after a schema change, run `npx prisma generate`.
 5. Start the app with `npm run dev` and open [http://localhost:3000](http://localhost:3000).
 
 Do not run `prisma migrate reset` against a database with data you need. To check a fresh install, use a separate empty local database.
@@ -21,12 +21,14 @@ Do not run `prisma migrate reset` against a database with data you need. To chec
 ## Checks
 
 - `npm run lint` runs ESLint.
-- `npx tsc --noEmit` checks TypeScript types.
+- `npm run typecheck` generates Prisma and Next.js types, then checks TypeScript types.
 - `npm test` runs the helper tests with Node's built-in test runner.
 - `npm run build` generates the Prisma client and creates the production build.
 - `npm run db:prune-rate-limits` removes expired rate-limit buckets. Run it periodically using your deployment scheduler.
 
 `npm run db:clean -- --confirm-delete-data` is only for disposable development databases. It deletes application data while preserving one administrator, and refuses to run when `NODE_ENV=production`.
+
+If the app reports `Can't resolve '@/generated/prisma/client'` after switching branches or pulling changes, stop and restart it with `npm run dev`. Its `predev` hook regenerates the ignored Prisma client. If dependencies were installed with lifecycle scripts disabled, run `npm run postinstall` explicitly.
 
 ## Deployment notes
 
