@@ -13,6 +13,7 @@ export default function SearchForm({ defaults = {} }: { defaults?: Filters }) {
       method="get"
       className="search-form"
     >
+      {defaults.company && <input type="hidden" name="company" value={defaults.company}/>}
       <label className="field">
         From
         <select name="origin" defaultValue={defaults.origin ?? ""}>

@@ -10,8 +10,11 @@ export const getSession = cache(async () => {
   if (!session?.user?.id) return null;
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { active: true, role: true, name: true, email: true, phone: true, image: true },
+    select: {
+      active: true, role: true, name: true, email: true, phone: true, image: true,
+      operatorMemberships: { where: { operator: { kind: "BUS_COMPANY" } }, select: { id: true }, take: 1 },
+    },
   });
   // Resolve permissions from the current database row, including after a role change.
-  return user?.active ? { ...session, user: { ...session.user, ...user } } : null;
+  return user?.active ? { ...session, user: { ...session.user, ...user, isBusMember: user.operatorMemberships.length > 0 } } : null;
 });

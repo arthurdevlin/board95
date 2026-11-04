@@ -144,8 +144,9 @@ model User {
   operators           Operator[] // companies/vehicles this user owns
   bookings            Booking[]
   carListings         CarHireListing[]
+  carListingHistory   CarHireListingHistory[]
   applications        Application[]
-  sentBookingMessages BookingMessage[] @relation("BookingMessageSender")
+  sentBookingMessages BookingMessage[]        @relation("BookingMessageSender")
   carHireRequests     CarHireRequest[]
   operatorMemberships OperatorMember[]
 
@@ -217,6 +218,8 @@ model Operator {
 
   vehicles        Vehicle[]
   trips           Trip[]
+  busSchedules    BusSchedule[]
+  tripHistory     TripHistory[]
   departurePoints DeparturePoint[]
   members         OperatorMember[]
 
@@ -230,8 +233,11 @@ model Vehicle {
   model      String
   plate      String   @unique
   seats      Int
+  active     Boolean @default(true)
 
-  trips Trip[]
+  trips       Trip[]
+  busSchedules BusSchedule[]
+  tripHistory TripHistory[]
 
   @@index([operatorId])
 }
@@ -244,7 +250,9 @@ model DeparturePoint {
   operatorId String? // set for a company's own station
   operator   Operator?          @relation(fields: [operatorId], references: [id])
 
-  trips Trip[]
+  trips       Trip[]
+  busSchedules BusSchedule[]
+  tripHistory TripHistory[]
 
   @@index([city])
 }
@@ -257,12 +265,17 @@ model Trip {
   vehicle          Vehicle        @relation(fields: [vehicleId], references: [id])
   departurePointId String
   departurePoint   DeparturePoint @relation(fields: [departurePointId], references: [id])
+  scheduleId       String?
+  schedule         BusSchedule?   @relation(fields: [scheduleId], references: [id])
+  serviceDate      String? // Malawi calendar day; one departure per schedule per day.
+  scheduleOverride Boolean @default(false)
+  cancelled        Boolean @default(false)
 
   type            TransportType
   origin          City
   destination     City
   departureAt     DateTime // stored in UTC; shown in Malawi time (UTC+2)
-  createdAt       DateTime       @default(now())
+  createdAt       DateTime      @default(now())
   fareMWK         Int // whole kwacha, no decimals
   seatsTotal      Int
   seatsAvailable  Int
@@ -277,12 +290,42 @@ model Trip {
   @@index([operatorId, departureAt])
   @@index([vehicleId, departureAt])
   @@index([departurePointId])
+  @@unique([scheduleId, serviceDate])
+}
+
+// A persistent timetable. Each date gets its own Trip and seat inventory.
+model BusSchedule {
+  id               String         @id @default(cuid())
+  operatorId       String
+  operator         Operator       @relation(fields: [operatorId], references: [id])
+  vehicleId        String
+  vehicle          Vehicle        @relation(fields: [vehicleId], references: [id])
+  departurePointId String
+  departurePoint   DeparturePoint @relation(fields: [departurePointId], references: [id])
+  origin           City
+  destination      City
+  departureTime    String // HH:mm in Malawi time.
+  weekdays         Int[]          @default([0, 1, 2, 3, 4, 5, 6]) // Sunday = 0.
+  fareMWK          Int
+  seatsTotal       Int
+  pickupAvailable  Boolean        @default(false)
+  pickupFeeMWK     Int?
+  active           Boolean        @default(true)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  trips            Trip[]
+
+  @@index([operatorId, active])
+  @@index([vehicleId])
+  @@index([departurePointId])
 }
 
 model Booking {
   id                        String           @id @default(cuid())
-  tripId                    String
-  trip                      Trip             @relation(fields: [tripId], references: [id])
+  tripId                    String?
+  trip                      Trip?            @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  tripHistoryId             String?
+  tripHistory               TripHistory?     @relation(fields: [tripHistoryId], references: [id], onDelete: Restrict)
   userId                    String?
   user                      User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
   guestName                 String?
@@ -303,6 +346,7 @@ model Booking {
 
   @@index([userId])
   @@index([tripId])
+  @@index([tripHistoryId])
   @@index([guestPhone, userId])
   @@index([createdAt, id])
   @@index([status, createdAt, id])
@@ -310,39 +354,42 @@ model Booking {
 }
 
 model CarHireListing {
-  id           String           @id @default(cuid())
-  ownerId      String
-  owner        User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  name         String
-  model        String
-  vehicleType  CarHireVehicleType @default(OTHER)
+  id                String             @id @default(cuid())
+  ownerId           String
+  owner             User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name              String
+  model             String
+  vehicleType       CarHireVehicleType @default(OTHER)
   lorryCapacityTons Int?
-  contactPhone String?
-  district     CarHireDistrict
-  dailyRateMWK Int
-  description  String?
-  photoUrl     String?
-  available    Boolean          @default(true)
-  createdAt    DateTime         @default(now())
-  requests     CarHireRequest[]
+  contactPhone      String?
+  district          CarHireDistrict
+  dailyRateMWK      Int
+  description       String?
+  photoUrl          String?
+  available         Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  renewedAt         DateTime?
+  expiresAt         DateTime           @default(dbgenerated("(CURRENT_TIMESTAMP + interval '7 days')"))
+  requests          CarHireRequest[]
 
   @@index([ownerId])
+  @@index([expiresAt, id])
   @@index([district, available])
   @@index([available, createdAt, id])
   @@index([ownerId, createdAt, id])
 }
 
 model Application {
-  id          String            @id @default(cuid())
-  userId      String
-  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  kind        ApplicationKind
-  status      ApplicationStatus @default(PENDING)
-  displayName String
-  phone       String
-  createdAt   DateTime          @default(now())
-  reviewedAt  DateTime?
-  reviewedByAdmin Boolean          @default(false)
+  id              String            @id @default(cuid())
+  userId          String
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind            ApplicationKind
+  status          ApplicationStatus @default(PENDING)
+  displayName     String
+  phone           String
+  createdAt       DateTime          @default(now())
+  reviewedAt      DateTime?
+  reviewedByAdmin Boolean           @default(false)
 
   @@index([userId, createdAt])
   @@index([status, createdAt])
@@ -363,23 +410,26 @@ model BookingMessage {
 }
 
 model CarHireRequest {
-  id          String               @id @default(cuid())
-  listingId   String
-  listing     CarHireListing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  passengerId String?
-  passenger   User?                @relation(fields: [passengerId], references: [id], onDelete: SetNull)
-  guestName   String
-  guestPhone  String
-  guestEmail  String?
-  startsAt    DateTime
-  endsAt      DateTime
-  totalMWK    Int
-  status      CarHireRequestStatus @default(PENDING)
-  reviewedByAdmin Boolean          @default(false)
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime             @updatedAt
+  id               String                 @id @default(cuid())
+  listingId        String?
+  listing          CarHireListing?        @relation(fields: [listingId], references: [id], onDelete: Restrict)
+  listingHistoryId String?
+  listingHistory   CarHireListingHistory? @relation(fields: [listingHistoryId], references: [id], onDelete: Restrict)
+  passengerId      String?
+  passenger        User?                  @relation(fields: [passengerId], references: [id], onDelete: SetNull)
+  guestName        String
+  guestPhone       String
+  guestEmail       String?
+  startsAt         DateTime
+  endsAt           DateTime
+  totalMWK         Int
+  status           CarHireRequestStatus   @default(PENDING)
+  reviewedByAdmin  Boolean                @default(false)
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
 
   @@index([listingId, startsAt, endsAt])
+  @@index([listingHistoryId, startsAt, endsAt])
   @@index([passengerId, createdAt])
   @@index([status, createdAt])
 }
@@ -420,4 +470,72 @@ model OperatorMember {
 
   @@unique([operatorId, userId])
   @@index([userId, role])
+}
+
+// Expired listings live outside the active inventory. IDs and booking links are preserved.
+model TripHistory {
+  id               String         @id
+  operatorId       String
+  operator         Operator       @relation(fields: [operatorId], references: [id])
+  vehicleId        String
+  vehicle          Vehicle        @relation(fields: [vehicleId], references: [id])
+  departurePointId String
+  departurePoint   DeparturePoint @relation(fields: [departurePointId], references: [id])
+  scheduleId       String?
+  serviceDate      String?
+  scheduleOverride Boolean @default(false)
+  cancelled        Boolean @default(false)
+
+  type            TransportType
+  origin          City
+  destination     City
+  departureAt     DateTime // stored in UTC; shown in Malawi time (UTC+2)
+  createdAt       DateTime      @default(now())
+  fareMWK         Int // whole kwacha, no decimals
+  seatsTotal      Int
+  seatsAvailable  Int
+  pickupAvailable Boolean       @default(false)
+  pickupFeeMWK    Int?
+
+  archivedAt         DateTime  @default(now())
+  operatorName       String
+  vehicleModel       String
+  vehiclePlate       String
+  departurePointName String
+  bookings           Booking[]
+
+  // Speeds up the search on /transport.
+  @@index([origin, destination, departureAt])
+  @@index([departureAt, id])
+  @@index([operatorId, departureAt])
+  @@index([vehicleId, departureAt])
+  @@index([departurePointId])
+}
+
+model CarHireListingHistory {
+  id                String             @id
+  ownerId           String
+  owner             User               @relation(fields: [ownerId], references: [id])
+  name              String
+  model             String
+  vehicleType       CarHireVehicleType @default(OTHER)
+  lorryCapacityTons Int?
+  contactPhone      String?
+  district          CarHireDistrict
+  dailyRateMWK      Int
+  description       String?
+  photoUrl          String?
+  available         Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  renewedAt         DateTime?
+  expiresAt         DateTime           @default(dbgenerated("(CURRENT_TIMESTAMP + interval '7 days')"))
+  archivedAt        DateTime           @default(now())
+  ownerName         String
+  requests          CarHireRequest[]
+
+  @@index([ownerId])
+  @@index([expiresAt, id])
+  @@index([district, available])
+  @@index([available, createdAt, id])
+  @@index([ownerId, createdAt, id])
 }

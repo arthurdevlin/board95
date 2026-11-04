@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import PasswordFields from "@/components/PasswordFields";
 
 export default function AdminCreateUserForm({ action, role = "CUSTOMER" }: { action: (formData: FormData) => void | Promise<void>; role?: "CUSTOMER" | "ADMIN" }) {
   const router = useRouter();
@@ -40,8 +41,7 @@ export default function AdminCreateUserForm({ action, role = "CUSTOMER" }: { act
     <label className="field"><span>Full name</span><input name="name" autoComplete="name" required minLength={2} maxLength={100}/></label>
     <label className="field"><span>Email address</span><input name="email" type="email" autoComplete="email" required maxLength={254}/></label>
     <label className="field"><span>Mobile number <em>(optional)</em></span><input name="phone" type="tel" autoComplete="tel" placeholder="0991 234 567"/></label>
-    <label className="field"><span>Initial password</span><input name="password" type="password" autoComplete="new-password" required minLength={8} maxLength={128}/></label>
-    <label className="field"><span>Re-enter password</span><input name="confirmPassword" type="password" autoComplete="new-password" required minLength={8} maxLength={128}/></label>
+    <PasswordFields label="Initial password" disabled={pending}/>
     {error && <p className="alert alert-error" role="alert">{error}</p>}
     <button className="btn btn-primary" type="submit" disabled={pending}>{pending ? "Creating account…" : role === "ADMIN" ? "Create administrator" : "Create passenger account"}</button>
   </form>;

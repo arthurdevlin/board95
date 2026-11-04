@@ -9,7 +9,13 @@ import type { NavigationEntry } from "@/components/DashboardSectionNavigation";
 import { operatorWorkspace } from "@/lib/operator-workspace";
 
 export default function Header() {
-  return <header className="site-header"><div className="site-header-inner"><Link href="/" className="brand-link"><Image src="/b95logo.png" alt="Board95" width={160} height={40} className="site-logo" loading="eager"/></Link><Suspense fallback={<span className="user-menu-placeholder"/>}><HeaderMenu/></Suspense></div></header>;
+  return <header className="site-header"><div className="site-header-inner"><Suspense fallback={<span className="brand-link"><Image src="/b95logo.png" alt="Board95" width={160} height={40} className="site-logo" loading="eager"/></span>}><HeaderBrand/></Suspense><Suspense fallback={<span className="user-menu-placeholder"/>}><HeaderMenu/></Suspense></div></header>;
+}
+
+async function HeaderBrand() {
+  await connection();
+  const session = await getSession();
+  return <Link href={session ? "/account" : "/"} className="brand-link" aria-label="Board95 home"><Image src="/b95logo.png" alt="Board95" width={160} height={40} className="site-logo" loading="eager"/></Link>;
 }
 
 async function HeaderMenu() {
@@ -51,7 +57,7 @@ async function HeaderMenu() {
         { label: `${operator.kind === "BUS_COMPANY" ? "Bus" : "Taxi"} summary`, href: `/operator#operator-profile-${operator.id}` },
         { label: "Trip schedule", href: `/operator#operator-trips-${operator.id}` },
         { label: operator.kind === "BUS_COMPANY" ? "Buses" : "Taxis", href: `/operator#operator-vehicles-${operator.id}` },
-        ...(operator.active && operator.verified ? [{ label: "Add a departure", href: `/operator#operator-add-trip-${operator.id}` }] : []),
+        ...(operator.active && operator.verified ? [{ label: operator.kind === "BUS_COMPANY" ? "Add a recurring bus" : "Add a departure", href: `/operator#operator-add-trip-${operator.id}` }] : []),
       ] })) },
       { label: "Bookings", children: [
         { label: "Pending requests", href: "/operator#operator-bookings" },
@@ -73,7 +79,7 @@ async function HeaderMenu() {
       ] },
     ] }];
   } else if (session.user.role === "CUSTOMER") {
-    const memberships = await prisma.operatorMember.findMany({ where: { userId: session.user.id, operator: { kind: "BUS_COMPANY", active: true } }, select: { operatorId: true, role: true, operator: { select: { name: true, active: true, verified: true } } } });
+    const memberships = await prisma.operatorMember.findMany({ where: { userId: session.user.id, operator: { kind: "BUS_COMPANY" } }, select: { operatorId: true, role: true, operator: { select: { name: true, active: true, verified: true } } } });
     if (memberships.length) {
       links = [{href:"/operator",label:"Bus dashboard"}];
       groups = [{ label: "Bus workspace", children: [
@@ -82,7 +88,7 @@ async function HeaderMenu() {
           { label: "Bus summary", href: `/operator#operator-profile-${membership.operatorId}` },
           { label: "Trip schedule", href: `/operator#operator-trips-${membership.operatorId}` },
           { label: "Buses", href: `/operator#operator-vehicles-${membership.operatorId}` },
-          ...(membership.role === "ADMIN" && membership.operator.active && membership.operator.verified ? [{ label: "Add a departure", href: `/operator#operator-add-trip-${membership.operatorId}` }] : []),
+          ...(membership.role === "ADMIN" && membership.operator.active && membership.operator.verified ? [{ label: "Add a recurring bus", href: `/operator#operator-add-trip-${membership.operatorId}` }] : []),
         ] })) },
         { label: "Bookings", children: [
           { label: "Pending requests", href: "/operator#operator-bookings" },
@@ -95,5 +101,6 @@ async function HeaderMenu() {
   } else {
     links = [{href:"/transport",label:"Find transport"},{href:"/car-hire",label:"Car hire"},{href:"/account#my-bookings",label:"My bookings"}];
   }
-  return <RoleNavigation signedIn name={session.user.name} image={session.user.image} links={[{href:"/account",label:"Home"}, ...links]} groups={groups.length ? [{label:"Home",href:"/account"}, ...groups] : groups}/>;
+  const home = "/account";
+  return <RoleNavigation signedIn name={session.user.name} image={session.user.image} links={[{href:home,label:"Home"}, ...links]} groups={groups.length ? [{label:"Home",href:home}, ...groups] : groups}/>;
 }

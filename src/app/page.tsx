@@ -1,11 +1,21 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
 import HomeTripSearch from "@/components/HomeTripSearch";
-import TripCard from "@/components/TripCard";
 import TripCardSkeleton from "@/components/TripCardSkeleton";
-import { getUpcomingTrips } from "@/lib/trips";
+import DepartingSoon from "@/components/DepartingSoon";
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/session";
+import { canBrowseListings, roleHome } from "@/lib/access";
+import BusCompanyDepartures from "@/components/BusCompanyDepartures";
 
 export default function Home() {
+  return <Suspense fallback={<TripCardSkeleton/>}><PublicHome/></Suspense>;
+}
+
+async function PublicHome() {
+  await connection();
+  const session = await getSession();
+  if (!canBrowseListings(session?.user)) redirect(roleHome(session?.user));
   return (
     <>
       <section className="hero">
@@ -20,36 +30,8 @@ export default function Home() {
         <p className="dashboard-help"><a href="/bookings/lookup">Already booked? Find your booking by reference</a></p>
       </section>
 
-      <section className="section-gap">
-        <h2 className="section-title">Departing soon</h2>
-        <Suspense
-          fallback={
-            <div className="trip-grid mt-4 grid gap-4 md:grid-cols-2">
-              <TripCardSkeleton />
-              <TripCardSkeleton />
-            </div>
-          }
-        >
-          <DepartingSoon />
-        </Suspense>
-      </section>
+      <Suspense fallback={<TripCardSkeleton/>}><BusCompanyDepartures/></Suspense>
+      <DepartingSoon/>
     </>
-  );
-}
-
-// This reads the database and the current time, so it renders per request.
-// connection() tells Next.js "wait for a real request before running this".
-async function DepartingSoon() {
-  await connection();
-  const soon = await getUpcomingTrips(2);
-  if (soon.length === 0) {
-    return <p className="empty-state mt-4">No upcoming trips yet.</p>;
-  }
-  return (
-    <div className="trip-grid mt-4 grid gap-4 md:grid-cols-2">
-      {soon.map((trip) => (
-        <TripCard key={trip.id} trip={trip} />
-      ))}
-    </div>
   );
 }

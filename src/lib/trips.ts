@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 import { parsePageParam, readPage } from "@/lib/pagination";
 import { cacheLife, cacheTag } from "next/cache";
+import { ensureBusDepartures } from "@/lib/bus-schedules";
 
 // What the UI needs to draw a card. We deliberately do NOT hand raw database
 // rows to components: if the table changes, only the mapper below changes.
@@ -22,6 +23,7 @@ export type TripListing = {
   vehicle: { model: string; plate: string };
   pickup: { available: boolean; extraFeeMWK?: number };
   operator: { name: string; verified: boolean; phone?: string };
+  operatingDays?: number[];
 };
 
 const tripSelect = {
@@ -39,6 +41,7 @@ const tripSelect = {
   operator: { select: { name: true, verified: true, kind: true, phone: true } },
   vehicle: { select: { model: true, plate: true } },
   departurePoint: { select: { name: true } },
+  schedule: { select: { weekdays: true } },
 } satisfies Prisma.TripSelect;
 
 type TripRow = Prisma.TripGetPayload<{ select: typeof tripSelect }>;
@@ -53,6 +56,7 @@ function toListing(row: TripRow): TripListing {
     departureTime: toMalawiTime(row.departureAt),
     createdAt: row.createdAt,
     departurePoint: row.departurePoint.name,
+    operatingDays: row.schedule?.weekdays,
     fareMWK: row.fareMWK,
     seatsTotal: row.seatsTotal,
     seatsAvailable: row.seatsAvailable,
@@ -75,6 +79,7 @@ function toListing(row: TripRow): TripListing {
 }
 
 export type Filters = {
+  company?: string;
   origin?: City;
   destination?: City;
   date?: string;
@@ -95,13 +100,16 @@ export function parseFilters(params: RawParams): Filters {
   const destination = first(params.destination);
   const date = first(params.date);
   const type = first(params.type);
+  const company = first(params.company)?.trim();
+  const companyId = company && /^[a-zA-Z0-9_-]{1,64}$/.test(company) ? company : undefined;
 
   return {
+    company: companyId,
     origin: CITIES.find((c) => c === origin),
     destination: CITIES.find((c) => c === destination),
     date: date && dayRange(date) ? date : undefined,
     invalidDate: Boolean(date && !dayRange(date)),
-    type: type === "bus" || type === "taxi" ? type : undefined,
+    type: companyId ? "bus" : type === "bus" || type === "taxi" ? type : undefined,
   };
 }
 
@@ -120,13 +128,23 @@ export type TripSearchResult = {
 
 // The database does the filtering and sorting. Never load every trip and
 // filter in JavaScript: that gets slow as the table grows.
-export async function searchTrips(filters: Filters, requestedPage = 1): Promise<TripSearchResult> {
+export async function searchTrips(filters: Filters, requestedPage = 1, previewUserId?: string): Promise<TripSearchResult> {
+  if (filters.type !== "taxi") await ensureBusDepartures(filters.date);
   const where: Prisma.TripWhereInput = {
-    operator: { active: true, verified: true, OR: [{ ownerId: null }, { owner: { active: true } }] },
+    cancelled: false,
+    vehicle: { active: true },
+    OR: [{ scheduleId: null }, { scheduleOverride: true }, { schedule: { active: true } }],
+    operator: previewUserId
+      ? { OR: [{ ownerId: previewUserId }, { members: { some: { userId: previewUserId } } }] }
+      : { active: true, verified: true, OR: [{ ownerId: null }, { owner: { active: true } }] },
   };
+  if (filters.company) {
+    where.operatorId = filters.company;
+    where.type = "BUS";
+  }
   if (filters.origin) where.origin = filters.origin;
   if (filters.destination) where.destination = filters.destination;
-  if (filters.type) where.type = filters.type === "bus" ? "BUS" : "TAXI";
+  if (filters.type && !filters.company) where.type = filters.type === "bus" ? "BUS" : "TAXI";
 
   const range = filters.date ? dayRange(filters.date) : null;
   if (range) {
@@ -142,15 +160,33 @@ export async function searchTrips(filters: Filters, requestedPage = 1): Promise<
   return { trips: rows.map(toListing), page, pageSize: SEARCH_PAGE_SIZE, total };
 }
 
-export async function getUpcomingTrips(limit: number): Promise<TripListing[]> {
-  "use cache";
-  cacheLife({ stale: 15, revalidate: 15, expire: 30 });
-  cacheTag("public-trips");
+// Evaluate per request so departures and the Malawi day boundary cannot go stale.
+export async function getUpcomingTrips(limit: number, now = new Date()): Promise<TripListing[]> {
+  const today = toMalawiDate(now);
+  const range = dayRange(today)!;
+  await ensureBusDepartures(today);
   const rows = await prisma.trip.findMany({
-    where: { operator: { active: true, verified: true, OR: [{ ownerId: null }, { owner: { active: true } }] }, departureAt: { gte: new Date() } },
+    where: {
+      cancelled: false,
+      vehicle: { active: true },
+      OR: [{ scheduleId: null }, { scheduleOverride: true }, { schedule: { active: true } }],
+      operator: { active: true, verified: true, OR: [{ ownerId: null }, { owner: { active: true } }] },
+      departureAt: { gt: now, lte: new Date(now.getTime() + 8 * 60 * 60 * 1000), lt: range.end },
+    },
     select: tripSelect,
     orderBy: [{ departureAt: "asc" }, { id: "asc" }],
     take: limit,
   });
   return rows.map(toListing);
+}
+
+export async function getRegisteredBusCompanies() {
+  "use cache";
+  cacheLife({ stale: 15, revalidate: 15, expire: 30 });
+  cacheTag("public-trips");
+  return prisma.operator.findMany({
+    where: { kind: "BUS_COMPANY", active: true, verified: true, OR: [{ ownerId: null }, { owner: { active: true } }] },
+    select: { id: true, name: true },
+    orderBy: [{ name: "asc" }, { id: "asc" }],
+  });
 }

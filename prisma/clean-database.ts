@@ -16,8 +16,11 @@ async function main() {
     await tx.booking.deleteMany();
     await tx.carHireRequest.deleteMany();
     await tx.carHireListing.deleteMany();
+    await tx.carHireListingHistory.deleteMany();
+    await tx.tripHistory.deleteMany();
     await tx.application.deleteMany();
     await tx.trip.deleteMany();
+    await tx.busSchedule.deleteMany();
     await tx.departurePoint.deleteMany();
     await tx.vehicle.deleteMany();
     await tx.operator.deleteMany();

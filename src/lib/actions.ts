@@ -1,5 +1,6 @@
 "use server";
 
+import { carHireExpiry, withTripHistory, withListingHistory } from "@/lib/listing-lifecycle";
 import { formatTimestamp } from "@/lib/format";
 import { randomBytes } from "node:crypto";
 import { hashPassword } from "better-auth/crypto";
@@ -14,6 +15,7 @@ import { hashGuestToken, matchesGuestToken, normalizeMalawiPhone } from "@/lib/g
 import { removeCarPhoto, storeCarPhoto } from "@/lib/car-photo-storage";
 import { CAR_HIRE_DISTRICTS, type CarHireDistrictCode } from "@/lib/car-hire-districts";
 import { isDatabaseAmount, isSelfServiceApplicationKind } from "@/lib/validation";
+import { canApplyForOperator, canBrowseListings } from "@/lib/access";
 
 export type BookingRequestState = {
   status: "idle" | "success" | "unavailable" | "error";
@@ -60,7 +62,7 @@ export async function saveProfileSettingsAction(formData: FormData) {
 export async function applyForAccountTypeFromSignup(kind: "TAXI_OWNER" | "CAR_HIRER", displayName: string, phone: string) {
   if (!isSelfServiceApplicationKind(kind)) return { error: "Choose a taxi-driver or car-hire application." };
   const session = await getSession();
-  if (!session?.user?.id || session.user.role !== "CUSTOMER") return { error: "Sign in as a passenger before applying." };
+  if (!session?.user?.id || !canApplyForOperator(session.user)) return { error: "Only passenger accounts can apply for an operator role." };
   const name = displayName.trim();
   const rawPhone = phone.replace(/[\s()-]/g, "");
   if (name.length < 2 || name.length > 100) return { error: "Enter a valid business or operator name." };
@@ -87,6 +89,7 @@ export async function requestSeatAction(
   formData: FormData,
 ): Promise<BookingRequestState> {
   const session = await getSession();
+  if (!canBrowseListings(session?.user)) return { status: "error", message: "Provider accounts can only preview their own listings. Use a passenger account to book." };
   const bookingLimit = session
     ? await allowRequest("signed-in-booking", 20, 10 * 60 * 1000)
     : await allowRequest("guest-booking", 8, 10 * 60 * 1000);
@@ -138,11 +141,15 @@ export async function requestSeatAction(
           seatsAvailable: true,
           pickupAvailable: true,
           pickupFeeMWK: true,
+          schedule: { select: { active: true } },
+          cancelled: true,
+          scheduleOverride: true,
+          vehicle: { select: { active: true } },
           operator: { select: { active: true, verified: true, owner: { select: { active: true } } } },
         },
       });
 
-      if (!trip || trip.seatsAvailable <= 0 || !trip.operator.active || !trip.operator.verified || trip.operator.owner?.active === false || trip.departureAt <= now || (pickupRequested && !trip.pickupAvailable)) {
+      if (!trip || trip.cancelled || trip.vehicle?.active === false || (trip.schedule?.active === false && !trip.scheduleOverride) || trip.seatsAvailable <= 0 || !trip.operator.active || !trip.operator.verified || trip.operator.owner?.active === false || trip.departureAt <= now || (pickupRequested && !trip.pickupAvailable)) {
         return "unavailable" as const;
       }
 
@@ -201,8 +208,8 @@ export async function requestSeatAction(
   const bookingId = result.slice("created:".length);
   const bookingForEmail = await prisma.booking.findUnique({
     where: { id: bookingId },
-    include: { user: { select: { email: true } }, trip: { include: { operator: { include: { owner: { select: { email: true } } } } } } },
-  });
+    include: { user: { select: { email: true } }, trip: { include: { operator: { include: { owner: { select: { email: true } } } } } }, tripHistory: { include: { operator: { include: { owner: { select: { email: true } } } } } } },
+  }).then((row) => row ? withTripHistory(row) : null);
   if (bookingForEmail) {
     const route = `${bookingForEmail.trip.origin} to ${bookingForEmail.trip.destination}`;
     const reference = bookingForEmail.id.slice(-8).toUpperCase();
@@ -236,6 +243,8 @@ export async function createBusCompanyAction(formData: FormData) {
   const phone = normalizeMalawiPhone(String(formData.get("phone") ?? ""));
   if (name.length < 2 || name.length > 100 || !phone) throw new Error("Enter a company name and valid Malawi mobile number.");
   await prisma.operator.create({ data: { name, phone, kind: "BUS_COMPANY", verified: true, active: true } });
+  updateTag("public-trips");
+  revalidatePath("/");
   revalidatePath("/admin");
   revalidatePath("/operator");
 }
@@ -343,8 +352,8 @@ export async function deleteUserAction(formData: FormData) {
   await prisma.$transaction(async (tx) => {
     const target = await tx.user.findUnique({ where: { id: userId }, select: { active: true } });
     if (!target || target.active) throw new Error("Block this account before deleting it.");
-    const rentalHistory = await tx.carHireRequest.findFirst({ where: { listing: { ownerId: userId } }, select: { id: true } });
-    if (rentalHistory) throw new Error("This provider has rental request history. Keep the account blocked to preserve passenger records.");
+    const rentalHistory = await tx.carHireRequest.findFirst({ where: { OR: [{ listing: { ownerId: userId } }, { listingHistory: { ownerId: userId } }] }, select: { id: true } });
+    if (rentalHistory || await tx.carHireListingHistory.count({ where: { ownerId: userId } })) throw new Error("This provider has rental request history. Keep the account blocked to preserve passenger records.");
     await tx.operator.updateMany({ where: { ownerId: userId }, data: { ownerId: null, active: false } });
     await tx.user.delete({ where: { id: userId } });
   }, { isolationLevel: "Serializable" });
@@ -380,16 +389,18 @@ export async function createAdminUserAction(formData: FormData) {
   revalidatePath("/admin");
 }
 
-export async function setUserPasswordAction(formData: FormData) {
+export type SetPasswordState = { status: "idle" | "success" | "error"; message: string };
+
+export async function setUserPasswordAction(_previous: SetPasswordState, formData: FormData): Promise<SetPasswordState> {
   await getAdministratorId();
   const userId = String(formData.get("userId") ?? "");
   const password = String(formData.get("password") ?? "");
   const confirmPassword = String(formData.get("confirmPassword") ?? "");
-  if (!userId || userId.length > 64) throw new Error("Invalid user.");
-  if (password.length < 8 || password.length > 128) throw new Error("Set a password between 8 and 128 characters.");
-  if (password !== confirmPassword) throw new Error("The passwords do not match.");
+  if (!userId || userId.length > 64) return { status: "error", message: "Invalid user." };
+  if (password.length < 8 || password.length > 128) return { status: "error", message: "Set a password between 8 and 128 characters." };
+  if (password !== confirmPassword) return { status: "error", message: "The passwords do not match." };
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
-  if (!user) throw new Error("User not found.");
+  if (!user) return { status: "error", message: "User not found." };
   const passwordHash = await hashPassword(password);
   await prisma.$transaction(async (tx) => {
     const credential = await tx.account.findFirst({ where: { userId, providerId: "credential" }, select: { id: true } });
@@ -401,12 +412,13 @@ export async function setUserPasswordAction(formData: FormData) {
     await tx.session.deleteMany({ where: { userId } });
   });
   revalidatePath("/admin");
+  return { status: "success", message: "Password assigned. Existing sessions have been signed out." };
 }
 
 export async function submitAccountApplicationAction(formData: FormData) {
   const session = await getSession();
   if (!session?.user?.id) redirect("/sign-in?next=/account");
-  if (session.user.role !== "CUSTOMER") throw new Error("Only customer accounts can apply for an operator or car-hire role.");
+  if (!canApplyForOperator(session.user)) throw new Error("Only passenger accounts can apply for an operator or car-hire role.");
   const kind = String(formData.get("kind") ?? "");
   const displayName = String(formData.get("displayName") ?? "").trim();
   const rawPhone = String(formData.get("phone") ?? "").replace(/[\s()-]/g, "");
@@ -480,13 +492,13 @@ export async function updateBookingStatusAction(formData: FormData) {
   const booking = await prisma.booking.findFirst({
     where: {
       id: bookingId,
-      ...(session.user.role === "ADMIN" ? {} : session.user.role === "OWNER" ? { trip: { operator: { ownerId: session.user.id, active: true, verified: true } } } : { trip: { operatorId: { in: memberships.map((membership) => membership.operatorId) } } }),
+      ...(session.user.role === "ADMIN" ? {} : session.user.role === "OWNER" ? { OR: [{ trip: { operator: { ownerId: session.user.id, active: true, verified: true } } }, { tripHistory: { operator: { ownerId: session.user.id, active: true, verified: true } } }] } : { OR: [{ trip: { operatorId: { in: memberships.map((membership) => membership.operatorId) } } }, { tripHistory: { operatorId: { in: memberships.map((membership) => membership.operatorId) } } }] }),
     },
-    select: { id: true, userId: true, tripId: true, status: true, seats: true, reviewedByAdmin: true, trip: { select: { departureAt: true, seatsTotal: true } } },
-  });
+    select: { id: true, userId: true, tripId: true, status: true, seats: true, reviewedByAdmin: true, trip: { select: { departureAt: true, seatsTotal: true } }, tripHistory: { select: { departureAt: true, seatsTotal: true } } },
+  }).then((row) => row ? withTripHistory(row) : null);
   if (!booking) throw new Error("Booking not found.");
   const nextStatus = status as "ACCEPTED" | "DECLINED" | "CANCELLED" | "COMPLETED";
-  const canResolvePending = booking.status === "PENDING" && ["ACCEPTED", "DECLINED"].includes(nextStatus);
+  const canResolvePending = booking.status === "PENDING" && (nextStatus === "DECLINED" || (nextStatus === "ACCEPTED" && booking.tripId !== null && booking.trip.departureAt > new Date()));
   const canComplete = booking.status === "ACCEPTED" && nextStatus === "COMPLETED" && booking.trip.departureAt <= new Date();
   const canAdminCancel = session.user.role === "ADMIN" && ["PENDING", "ACCEPTED"].includes(booking.status) && nextStatus === "CANCELLED" && booking.trip.departureAt > new Date();
   if (!canResolvePending && !canComplete && !canAdminCancel) throw new Error("This booking cannot move to that status now.");
@@ -495,11 +507,11 @@ export async function updateBookingStatusAction(formData: FormData) {
     const changed = await tx.booking.updateMany({ where: { id: booking.id, status: booking.status }, data: { status: nextStatus, reviewedByAdmin: session.user.role === "ADMIN" || booking.reviewedByAdmin } });
     if (changed.count !== 1) throw new Error("This request has already been updated.");
     if (nextStatus === "ACCEPTED") {
-      const reserved = await tx.trip.updateMany({ where: { id: booking.tripId, seatsAvailable: { gte: booking.seats }, departureAt: { gt: new Date() } }, data: { seatsAvailable: { decrement: booking.seats } } });
+      const reserved = await tx.trip.updateMany({ where: { id: booking.tripId ?? "", seatsAvailable: { gte: booking.seats }, departureAt: { gt: new Date() } }, data: { seatsAvailable: { decrement: booking.seats } } });
       if (reserved.count !== 1) throw new Error("There are not enough seats remaining to accept this booking.");
     }
     if (["DECLINED", "CANCELLED"].includes(nextStatus) && booking.status === "ACCEPTED") {
-      const restored = await tx.trip.updateMany({ where: { id: booking.tripId, seatsAvailable: { lte: booking.trip.seatsTotal - booking.seats } }, data: { seatsAvailable: { increment: booking.seats } } });
+      const restored = await tx.trip.updateMany({ where: { id: booking.tripId ?? "", seatsAvailable: { lte: booking.trip.seatsTotal - booking.seats } }, data: { seatsAvailable: { increment: booking.seats } } });
       if (restored.count !== 1) throw new Error("Seat inventory could not be restored safely.");
     }
   });
@@ -507,7 +519,7 @@ export async function updateBookingStatusAction(formData: FormData) {
   revalidatePath("/operator");
   revalidatePath("/admin");
   revalidatePath("/account");
-  const updatedBooking = await prisma.booking.findUnique({ where: { id: booking.id }, include: { user: { select: { email: true } }, trip: { select: { origin: true, destination: true, departureAt: true } } } });
+  const updatedBooking = await prisma.booking.findUnique({ where: { id: booking.id }, include: { user: { select: { email: true } }, trip: { select: { origin: true, destination: true, departureAt: true } }, tripHistory: { select: { origin: true, destination: true, departureAt: true } } } }).then((row) => row ? withTripHistory(row) : null);
   await sendBoard95Email({
     to: updatedBooking?.guestEmail ?? updatedBooking?.user?.email,
     subject: `Booking ${nextStatus.toLowerCase()}`,
@@ -520,13 +532,13 @@ export async function cancelPassengerBookingAction(formData: FormData) {
   const session = await getSession();
   if (!session?.user?.id || session.user.role !== "CUSTOMER") throw new Error("Passenger access required.");
   const bookingId = String(formData.get("bookingId") ?? "");
-  const booking = await prisma.booking.findFirst({ where: { id: bookingId, userId: session.user.id, status: { in: ["PENDING", "ACCEPTED"] } }, include: { trip: { select: { departureAt: true, seatsTotal: true } } } });
+  const booking = await prisma.booking.findFirst({ where: { id: bookingId, userId: session.user.id, status: { in: ["PENDING", "ACCEPTED"] } }, include: { trip: { select: { departureAt: true, seatsTotal: true } }, tripHistory: { select: { departureAt: true, seatsTotal: true } } } }).then((row) => row ? withTripHistory(row) : null);
   if (!booking || booking.trip.departureAt <= new Date()) throw new Error("Only future pending or accepted bookings can be cancelled.");
   await prisma.$transaction(async (tx) => {
     const changed = await tx.booking.updateMany({ where: { id: booking.id, userId: session.user.id, status: booking.status, trip: { departureAt: { gt: new Date() } } }, data: { status: "CANCELLED" } });
     if (changed.count !== 1) throw new Error("This booking has already changed or departed.");
     if (booking.status === "ACCEPTED") {
-      const restored = await tx.trip.updateMany({ where: { id: booking.tripId, seatsAvailable: { lte: booking.trip.seatsTotal - booking.seats } }, data: { seatsAvailable: { increment: booking.seats } } });
+      const restored = await tx.trip.updateMany({ where: { id: booking.tripId ?? "", seatsAvailable: { lte: booking.trip.seatsTotal - booking.seats } }, data: { seatsAvailable: { increment: booking.seats } } });
       if (restored.count !== 1) throw new Error("Seat inventory could not be restored safely.");
     }
   });
@@ -535,7 +547,7 @@ export async function cancelPassengerBookingAction(formData: FormData) {
   revalidatePath("/operator");
   revalidatePath("/admin");
   revalidatePath("/transport");
-  const details = await prisma.booking.findUnique({ where: { id: booking.id }, select: { trip: { select: { origin: true, destination: true, operator: { select: { owner: { select: { email: true } } } } } } } });
+  const details = await prisma.booking.findUnique({ where: { id: booking.id }, select: { trip: { select: { origin: true, destination: true, operator: { select: { owner: { select: { email: true } } } } } }, tripHistory: { select: { origin: true, destination: true, operator: { select: { owner: { select: { email: true } } } } } } } }).then((row) => row ? withTripHistory(row) : null);
   await Promise.all([
     sendBoard95Email({ to: session.user.email, subject: "Booking cancelled", lines: [`Your request for ${details?.trip.origin ?? ""} to ${details?.trip.destination ?? ""} was cancelled.`, `Reference: ${booking.id.slice(-8).toUpperCase()}.`] }),
     sendBoard95Email({ to: details?.trip.operator.owner?.email, subject: "Passenger cancelled a booking", lines: [`${booking.guestName ?? "A passenger"} cancelled a booking.`, `Reference: ${booking.id.slice(-8).toUpperCase()}.`] }),
@@ -609,8 +621,9 @@ export async function deleteVehicleAction(formData: FormData) {
   const session = await getSession();
   if (!session?.user?.id || !["OWNER", "ADMIN"].includes(session.user.role)) throw new Error("Operator access required.");
   const vehicleId = String(formData.get("vehicleId") ?? "");
-  const vehicle = await prisma.vehicle.findFirst({ where: { id: vehicleId, ...(session.user.role === "ADMIN" ? {} : { operator: { ownerId: session.user.id } }) }, include: { _count: { select: { trips: true } } } });
+  const vehicle = await prisma.vehicle.findFirst({ where: { id: vehicleId, ...(session.user.role === "ADMIN" ? {} : { operator: { ownerId: session.user.id } }) }, include: { _count: { select: { trips: true, busSchedules: true } } } });
   if (!vehicle) throw new Error("Vehicle not found.");
+  if (vehicle._count.busSchedules) throw new Error("This bus has a recurring timetable. Keep the vehicle and edit or pause its services instead.");
   if (vehicle._count.trips) throw new Error("This vehicle has trip history. Edit its details or remove its unbooked trips before deleting it.");
   await prisma.vehicle.delete({ where: { id: vehicleId } });
   updateTag("public-trips");
@@ -636,6 +649,7 @@ export async function updateTripScheduleAction(formData: FormData) {
   if (!departureAt || departureAt <= new Date()) throw new Error("Only valid future departures can be edited.");
   const trip = await prisma.trip.findFirst({ where: { id: tripId, ...(session.user.role === "ADMIN" ? {} : { operator: { ownerId: session.user.id, active: true, verified: true } }) }, include: { operator: true } });
   if (!trip) throw new Error("Trip not found or your operator profile is not approved.");
+  if (trip.scheduleId) throw new Error("Edit this bus through its recurring timetable.");
   const dayRangeForTrip = dayRange(date);
   if (!dayRangeForTrip) throw new Error("Departure must be a valid calendar date.");
   const pointData = { city: origin as "Blantyre" | "Lilongwe" | "Mzuzu", name: departureName, kind: trip.type === "BUS" ? "STATION" as const : "STAGE" as const, operatorId: trip.type === "BUS" ? trip.operatorId : null };
@@ -644,7 +658,7 @@ export async function updateTripScheduleAction(formData: FormData) {
     if (trip.type === "TAXI" && await tx.trip.findFirst({ where: { id: { not: trip.id }, vehicleId: trip.vehicleId, departureAt: { gte: dayRangeForTrip.start, lt: dayRangeForTrip.end } }, select: { id: true } })) {
       throw new Error("This taxi already has a trip on that day.");
     }
-    const pointUsers = await tx.trip.count({ where: { departurePointId: trip.departurePointId } });
+    const pointUsers = await tx.trip.count({ where: { departurePointId: trip.departurePointId } }) + await tx.busSchedule.count({ where: { departurePointId: trip.departurePointId } });
     const point = pointUsers === 1
       ? await tx.departurePoint.update({ where: { id: trip.departurePointId }, data: pointData })
       : await tx.departurePoint.create({ data: pointData });
@@ -663,6 +677,7 @@ export async function deleteTripScheduleAction(formData: FormData) {
   const tripId = String(formData.get("tripId") ?? "");
   const trip = await prisma.trip.findFirst({ where: { id: tripId, ...(session.user.role === "ADMIN" ? {} : { operator: { ownerId: session.user.id } }) }, include: { _count: { select: { bookings: true } } } });
   if (!trip) throw new Error("Trip not found.");
+  if (trip.scheduleId) throw new Error("Pause this bus through its recurring timetable instead of deleting a daily departure.");
   if (trip._count.bookings) throw new Error("This trip has booking history and cannot be deleted. Contact passengers and support to cancel it safely.");
   await prisma.trip.delete({ where: { id: tripId } });
   updateTag("public-trips");
@@ -726,9 +741,16 @@ export async function sendBookingMessageAction(formData: FormData): Promise<neve
           operatorId: true,
           operator: { select: { ownerId: true, owner: { select: { id: true, name: true, email: true } } } },
         },
+      }, tripHistory: {
+        select: {
+          origin: true,
+          destination: true,
+          operatorId: true,
+          operator: { select: { ownerId: true, owner: { select: { id: true, name: true, email: true } } } },
+        },
       },
     },
-  });
+  }).then((row) => row ? withTripHistory(row) : null);
   if (!booking) redirect(session ? "/account" : "/bookings/lookup");
   const guestAuthorized = Boolean(booking.userId === null && booking.guestAccessTokenExpiresAt && booking.guestAccessTokenExpiresAt > new Date() && matchesGuestToken(guestToken, booking.guestAccessTokenHash));
   if (!session?.user?.id && !guestAuthorized) redirect("/bookings/lookup");
@@ -851,7 +873,7 @@ export async function createCarHireListingAction(formData: FormData) {
   const image = await readCarPhoto(photo);
   const storedPhoto = await storeCarPhoto(image.bytes, image.extension);
   try {
-    await prisma.carHireListing.create({ data: { ownerId: session.user.id, name, model, vehicleType: vehicleType as "SALOON" | "SUV" | "PICKUP" | "MINIBUS" | "BUS" | "TRUCK" | "LORRY" | "VAN" | "OTHER", lorryCapacityTons: vehicleType === "LORRY" ? lorryCapacityTons : null, contactPhone, district: district as CarHireDistrictCode, dailyRateMWK: rate, description: description.slice(0, 500) || null, photoUrl: storedPhoto.url } });
+    await prisma.carHireListing.create({ data: { ownerId: session.user.id, expiresAt: carHireExpiry(), name, model, vehicleType: vehicleType as "SALOON" | "SUV" | "PICKUP" | "MINIBUS" | "BUS" | "TRUCK" | "LORRY" | "VAN" | "OTHER", lorryCapacityTons: vehicleType === "LORRY" ? lorryCapacityTons : null, contactPhone, district: district as CarHireDistrictCode, dailyRateMWK: rate, description: description.slice(0, 500) || null, photoUrl: storedPhoto.url } });
   } catch (error) {
     await storedPhoto.cleanup();
     throw error;
@@ -878,7 +900,7 @@ export async function updateCarHireListingAction(formData: FormData) {
   if (vehicleType === "LORRY" && (!Number.isSafeInteger(lorryCapacityTons) || (lorryCapacityTons ?? 0) < 1 || (lorryCapacityTons ?? 0) > 100)) throw new Error("Enter the lorry capacity in tons (1–100).");
   if (!CAR_HIRE_DISTRICTS.some(([value]) => value === district) || !isDatabaseAmount(rate)) throw new Error("Choose a valid district and enter a daily rate.");
   const listing = await prisma.carHireListing.findFirst({ where: { id, ...(session.user.role === "ADMIN" ? {} : { ownerId: session.user.id }) } });
-  if (!listing) throw new Error("Vehicle listing not found.");
+  if (!listing || listing.expiresAt <= new Date()) throw new Error("Vehicle listing has expired or was not found. Check Old listings.");
   const photoValue = formData.get("photo");
   let storedPhoto: Awaited<ReturnType<typeof storeCarPhoto>> | null = null;
   if (photoValue instanceof File && photoValue.size > 0) {
@@ -920,6 +942,7 @@ type CarHireRequestOutcome =
 
 export async function requestCarHireAction(_previous: CarHireRequestState, formData: FormData): Promise<CarHireRequestState> {
   const session = await getSession();
+  if (!canBrowseListings(session?.user)) return { status: "error", message: "Provider accounts can only preview their own listings. Use a passenger account to request a vehicle." };
   if (!(await allowRequest("car-hire-request", 8, 10 * 60 * 1000))) return { status: "error", message: "Too many requests. Wait a few minutes and try again." };
   const listingId = String(formData.get("listingId") ?? "");
   const guestName = String(formData.get("guestName") ?? session?.user?.name ?? "").trim();
@@ -941,7 +964,7 @@ export async function requestCarHireAction(_previous: CarHireRequestState, formD
   try {
     outcome = await prisma.$transaction(async (tx) => {
       const listing = await tx.carHireListing.findFirst({
-        where: { id: listingId, available: true, owner: { active: true } },
+        where: { id: listingId, available: true, expiresAt: { gt: new Date() }, owner: { active: true } },
         select: { id: true, ownerId: true, name: true, dailyRateMWK: true, owner: { select: { name: true, email: true } } },
       });
       if (!listing) return { kind: "unavailable" as const };
@@ -982,15 +1005,16 @@ export async function reviewCarHireRequestAction(formData: FormData) {
   const requestId = String(formData.get("requestId") ?? "");
   const decision = String(formData.get("decision") ?? "");
   if (!requestId || !["ACCEPTED", "DECLINED"].includes(decision)) throw new Error("Invalid rental request decision.");
-  const request = await prisma.carHireRequest.findFirst({ where: { id: requestId, ...(session.user.role === "ADMIN" ? {} : { listing: { ownerId: session.user.id } }) }, include: { listing: { include: { owner: true } }, passenger: { select: { email: true } } } });
-  if (!request || request.status !== "PENDING") throw new Error("This rental request is no longer pending.");
-  await prisma.$transaction(async (tx) => {
+  const request = await prisma.$transaction(async (tx) => {
+    const request = await tx.carHireRequest.findFirst({ where: { id: requestId, ...(session.user.role === "ADMIN" ? {} : { OR: [{ listing: { ownerId: session.user.id } }, { listingHistory: { ownerId: session.user.id } }] }) }, include: { listing: { include: { owner: true } }, listingHistory: { include: { owner: true } }, passenger: { select: { email: true } } } }).then((row) => row ? withListingHistory(row) : null);
+    if (!request || request.status !== "PENDING") throw new Error("This rental request is no longer pending.");
     if (decision === "ACCEPTED") {
-      const conflict = await tx.carHireRequest.findFirst({ where: { id: { not: request.id }, listingId: request.listingId, status: "ACCEPTED", startsAt: { lt: request.endsAt }, endsAt: { gt: request.startsAt } }, select: { id: true } });
+      const conflict = await tx.carHireRequest.findFirst({ where: { id: { not: request.id }, ...(request.listingId ? { listingId: request.listingId } : { listingHistoryId: request.listingHistoryId }), status: "ACCEPTED", startsAt: { lt: request.endsAt }, endsAt: { gt: request.startsAt } }, select: { id: true } });
       if (conflict) throw new Error("Another rental request already holds some of these dates.");
     }
     const updated = await tx.carHireRequest.updateMany({ where: { id: request.id, status: "PENDING" }, data: { status: decision as "ACCEPTED" | "DECLINED", reviewedByAdmin: session.user.role === "ADMIN" } });
     if (updated.count !== 1) throw new Error("This rental request has already been reviewed.");
+    return request;
   }, { isolationLevel: "Serializable" });
   await sendBoard95Email({ to: request.guestEmail ?? request.passenger?.email, subject: decision === "ACCEPTED" ? "Your car-hire request was accepted" : "Your car-hire request was declined", lines: [`${request.listing.owner.name} ${decision === "ACCEPTED" ? "accepted" : "declined"} your request for ${request.listing.name}.`, `Estimated total: MWK ${request.totalMWK}.`, ...(session.user.role === "ADMIN" ? ["This decision was made by a Board95 administrator."] : [])] });
   revalidatePath("/car-hire/dashboard");
@@ -1001,7 +1025,7 @@ export async function cancelCarHireRequestAction(formData: FormData) {
   const session = await getSession();
   if (!session?.user?.id) throw new Error("Sign in to manage your rental request.");
   const requestId = String(formData.get("requestId") ?? "");
-  const request = await prisma.carHireRequest.findFirst({ where: { id: requestId, passengerId: session.user.id, status: { in: ["PENDING", "ACCEPTED"] } }, include: { listing: { include: { owner: { select: { email: true, name: true } } } } } });
+  const request = await prisma.carHireRequest.findFirst({ where: { id: requestId, passengerId: session.user.id, status: { in: ["PENDING", "ACCEPTED"] } }, include: { listing: { include: { owner: { select: { email: true, name: true } } } }, listingHistory: { include: { owner: { select: { email: true, name: true } } } } } }).then((row) => row ? withListingHistory(row) : null);
   if (!request || request.startsAt <= new Date()) throw new Error("Only future rental requests can be cancelled.");
   const cancelled = await prisma.carHireRequest.updateMany({ where: { id: request.id, passengerId: session.user.id, status: request.status }, data: { status: "CANCELLED" } });
   if (cancelled.count !== 1) throw new Error("This rental request has already changed.");
@@ -1033,9 +1057,26 @@ export async function toggleCarHireListingAction(formData: FormData) {
   if (availableValue !== "true" && availableValue !== "false") throw new Error("Invalid listing status.");
   const available = availableValue === "true";
   if (!id || id.length > 64) throw new Error("Invalid vehicle listing.");
-  const result = await prisma.carHireListing.updateMany({ where: { id, ...(session.user.role === "ADMIN" ? {} : { ownerId: session.user.id }) }, data: { available } });
+  const result = await prisma.carHireListing.updateMany({ where: { id, expiresAt: { gt: new Date() }, ...(session.user.role === "ADMIN" ? {} : { ownerId: session.user.id }) }, data: { available } });
   if (result.count !== 1) throw new Error("Listing not found.");
   revalidatePath("/admin");
   revalidatePath("/car-hire");
   revalidatePath("/car-hire/dashboard");
+}
+
+export async function renewCarHireListingAction(formData: FormData) {
+  const session = await getSession();
+  if (!session?.user?.id || !["CAR_HIRER", "ADMIN"].includes(session.user.role)) throw new Error("Car-hirer access required.");
+  const id = String(formData.get("listingId") ?? "");
+  if (!id || id.length > 64) throw new Error("Invalid vehicle listing.");
+  const now = new Date();
+  const result = await prisma.carHireListing.updateMany({
+    where: { id, expiresAt: { gt: now }, ...(session.user.role === "ADMIN" ? {} : { ownerId: session.user.id }) },
+    data: { renewedAt: now, expiresAt: carHireExpiry(now) },
+  });
+  if (result.count !== 1) throw new Error("This listing has expired or was not found. Check Old listings and publish a new listing.");
+  revalidatePath("/car-hire/dashboard");
+  revalidatePath(`/car-hire/dashboard/${id}`);
+  revalidatePath("/car-hire");
+  revalidatePath("/admin");
 }

@@ -1,5 +1,27 @@
 @import "tailwindcss";
 
+.company-section-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.company-section-heading .chip-link { display: inline-flex; align-items: center; gap: 0.35rem; }
+.bus-company-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: 1rem; margin-top: 1.25rem; }
+.bus-company-card { display: flex; flex-direction: column; min-width: 0; padding: 1.4rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--surface); color: var(--foreground); text-decoration: none; transition: border-color 160ms ease, box-shadow 160ms ease; }
+.bus-company-card:hover { border-color: var(--accent); box-shadow: 0 8px 24px rgb(26 55 92 / 9%); }
+.bus-company-top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.bus-company-icon { display: grid; place-items: center; width: 2.8rem; height: 2.8rem; border-radius: 0.8rem; background: var(--background); color: var(--accent); }
+.bus-company-card h3 { font-size: 1.15rem; font-weight: 750; overflow-wrap: anywhere; }
+.bus-company-route { margin-top: 0.4rem; margin-bottom: 1rem; font-size: 0.9rem; color: var(--muted); }
+.bus-company-card time { display: block; margin-top: 0.2rem; font-weight: 600; font-size: 0.9rem; }
+.bus-company-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.8rem; }
+.bus-company-footer strong { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--accent); }
+.listing-preview-note { margin-top: 1rem; border-top: 1px solid var(--line); padding-top: 1rem; color: var(--muted); font-size: 0.85rem; }
+.password-validation { color: var(--danger); font-size: 0.8rem; }
+.password-validation:empty { display: none; }
+.field input[aria-invalid="true"] { border-color: var(--danger); }
+.bus-schedule-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; min-width: 0; border: 0; padding: 0; }
+.bus-operating-days { min-width: 0; border: 1px solid var(--line); border-radius: 0.65rem; padding: 0.85rem; }
+.bus-operating-days legend { padding-inline: 0.3rem; font-weight: 600; font-size: 0.85rem; }
+.bus-operating-days > div { display: flex; flex-wrap: wrap; gap: 0.6rem 1.2rem; margin-top: 0.65rem; }
+@media (max-width: 600px) { .bus-schedule-fields { grid-template-columns: minmax(0, 1fr); } }
+
 :root {
   --background: #f1f5fb;
   --foreground: #172a43;
@@ -1577,3 +1599,10 @@ html[data-theme="dark"] .primary-navigation > a[aria-current="location"] { backg
   .account-action { padding: 0.85rem; }
   .account-action-arrow { right: 0.75rem; top: 1rem; }
 }
+
+/* Listing lifecycle reminders */
+.listing-renewal { display: grid; gap: .5rem; margin-top: .5rem; }
+.listing-renewal p { margin: 0; font-size: .85rem; }
+.listing-renewal .btn { white-space: normal; }
+.listing-expiry-warning { color: var(--danger, #b45309); font-weight: 600; }
+.listing-expiry-notice { border-left: 4px solid #d97706; display: grid; gap: 1rem; }

@@ -1,6 +1,7 @@
 import { formatDate, formatMWK, formatTimestamp } from "@/lib/format";
 import type { TripListing } from "@/lib/trips";
 import BookingRequestForm from "@/components/BookingRequestForm";
+import { timetableDaysLabel } from "@/lib/bus-timetable";
 
 // Three clear levels, each with its own colour:
 // plenty left = green, running low = amber, none = red.
@@ -18,8 +19,10 @@ function getAvailability(left: number, total: number, unit: string) {
 
 export default function TripCard({
   trip,
+  preview = false,
 }: {
   trip: TripListing;
+  preview?: boolean;
 }) {
   const soldOut = trip.seatsAvailable <= 0 || trip.seatsTotal <= 0;
   const isBus = trip.type === "bus";
@@ -49,7 +52,7 @@ export default function TripCard({
       </div>
 
       <p className="trip-point">{trip.departurePoint}</p>
-      <p className="field-hint">Posted {formatTimestamp(trip.createdAt)}</p>
+      <p className="field-hint">{trip.operatingDays ? `${timetableDaysLabel(trip.operatingDays)} · ${trip.departureTime} Malawi time` : `Posted ${formatTimestamp(trip.createdAt)}`}</p>
 
       <details className="trip-disclosure">
         <summary>
@@ -86,7 +89,7 @@ export default function TripCard({
                 <span className="trip-plate">{trip.vehicle.plate}</span>
               </dd>
             </div>
-            {operator.phone && (
+            {operator.phone && !preview && (
               <div>
                 <dt>Company phone</dt>
                 <dd>
@@ -110,7 +113,7 @@ export default function TripCard({
         </div>
       </details>
 
-      <BookingRequestForm tripId={trip.id} pickupAvailable={trip.pickup.available} soldOut={soldOut} />
+      {preview ? <p className="listing-preview-note">Listing preview · Passenger bookings are disabled.</p> : <BookingRequestForm tripId={trip.id} pickupAvailable={trip.pickup.available} soldOut={soldOut} />}
     </article>
   );
 }

@@ -1,0 +1,5 @@
+ALTER TABLE "Vehicle" ADD COLUMN "active" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "Trip" ADD COLUMN "scheduleOverride" BOOLEAN NOT NULL DEFAULT false,
+    ADD COLUMN "cancelled" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "TripHistory" ADD COLUMN "scheduleOverride" BOOLEAN NOT NULL DEFAULT false,
+    ADD COLUMN "cancelled" BOOLEAN NOT NULL DEFAULT false;

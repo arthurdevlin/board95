@@ -5,6 +5,10 @@ import SearchForm from "@/components/SearchForm";
 import TripCard from "@/components/TripCard";
 import TripCardSkeleton from "@/components/TripCardSkeleton";
 import { parseFilters, parsePage, searchTrips } from "@/lib/trips";
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/session";
+import { canBrowseListings, roleHome } from "@/lib/access";
+import { prisma } from "@/lib/prisma";
 
 export const metadata = { title: "Find transport | Board95" };
 
@@ -20,7 +24,6 @@ export default function TransportPage({
 }) {
   return (
     <section>
-      <h1 className="page-title page-title--plain">Find transport</h1>
       <Suspense
         fallback={
           <div className="trip-grid mt-4 grid gap-4 md:grid-cols-2">
@@ -40,18 +43,26 @@ export default function TransportPage({
 async function Results({ searchParams }: { searchParams: SearchParams }) {
   // We read the current time and the database, so wait for a real request.
   await connection();
+  const session = await getSession();
+  const preview = !canBrowseListings(session?.user);
+  if (preview && session?.user.role === "CAR_HIRER") redirect(roleHome(session.user));
   const params = await searchParams;
   const filters = parseFilters(params);
+  const company = filters.company ? await prisma.operator.findFirst({
+    where: { id: filters.company, kind: "BUS_COMPANY", ...(preview && session ? { OR: [{ ownerId: session.user.id }, { members: { some: { userId: session.user.id } } }] } : { active: true, verified: true, OR: [{ ownerId: null }, { owner: { active: true } }] }) },
+    select: { name: true },
+  }) : null;
   const requestedPage = parsePage(params);
   const sameCity = filters.origin && filters.origin === filters.destination;
-  const invalidSearch = Boolean(sameCity || filters.invalidDate);
+  const invalidSearch = Boolean(sameCity || filters.invalidDate || (filters.company && !company));
   const results = invalidSearch
     ? { trips: [], page: 1, pageSize: 12, total: 0 }
-    : await searchTrips(filters, requestedPage);
-  const hasFilters = Boolean(filters.origin || filters.destination || filters.date || filters.type || filters.invalidDate);
+    : await searchTrips(filters, requestedPage, preview ? session?.user.id : undefined);
+  const hasFilters = Boolean(filters.company || filters.origin || filters.destination || filters.date || filters.type || filters.invalidDate);
   const pageCount = Math.max(1, Math.ceil(results.total / results.pageSize));
   const pageHref = (page: number) => {
     const query = new URLSearchParams();
+    if (filters.company) query.set("company", filters.company);
     if (filters.origin) query.set("origin", filters.origin);
     if (filters.destination) query.set("destination", filters.destination);
     if (filters.date) query.set("date", filters.date);
@@ -61,6 +72,9 @@ async function Results({ searchParams }: { searchParams: SearchParams }) {
   };
   return (
     <>
+      <h1 className="page-title page-title--plain">{preview ? "Your transport listing previews" : company ? `${company.name} departures` : "Find transport"}</h1>
+      {preview && <p className="notice">Preview your own listings as passengers see them. Booking and contact actions are disabled. <Link href={roleHome(session?.user)}>Back to your dashboard</Link></p>}
+      {filters.company && !company && <p className="notice">This bus company is unavailable.</p>}
       <div className="search-panel">
         <SearchForm defaults={filters} />
       </div>
@@ -93,7 +107,7 @@ async function Results({ searchParams }: { searchParams: SearchParams }) {
       ) : results.trips.length > 0 ? (
         <div className="trip-grid mt-4 grid gap-4 md:grid-cols-2">
           {results.trips.map((trip) => (
-            <TripCard key={trip.id} trip={trip} />
+            <TripCard key={trip.id} trip={trip} preview={preview} />
           ))}
         </div>
       ) : null}

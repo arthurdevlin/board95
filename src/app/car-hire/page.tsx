@@ -7,6 +7,9 @@ import { ArrowUpRight, MessageCircle, Phone } from "lucide-react";
 import CarHireSearch from "@/components/CarHireSearch";
 import { CAR_HIRE_DISTRICTS, carHireDistrictName, type CarHireDistrictCode } from "@/lib/car-hire-districts";
 import { parsePageParam, readPage } from "@/lib/pagination";
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/session";
+import { canBrowseListings, roleHome } from "@/lib/access";
 
 export const metadata = { title: "Car hire | Board95" };
 
@@ -20,7 +23,6 @@ const displayPhone = (phone: string) => phone.replace(/^\+265/, "0");
 
 export default function CarHirePage({ searchParams }: { searchParams: SearchParams }) {
   return <section className="dashboard-page car-hire-page">
-    <div className="dashboard-intro"><p className="dashboard-eyebrow">SELF-DRIVE RENTALS</p><h1 className="page-title page-title--plain">Car hire in Malawi</h1><p>Browse vehicles available from local car-hire owners.</p></div>
     <Suspense fallback={<div className="hire-listings">{Array.from({ length: 4 }, (_, index) => <div className="panel skeleton-card" key={index} />)}</div>}>
       <CarHireListings searchParams={searchParams} />
     </Suspense>
@@ -29,6 +31,9 @@ export default function CarHirePage({ searchParams }: { searchParams: SearchPara
 
 async function CarHireListings({ searchParams }: { searchParams: SearchParams }) {
   await connection();
+  const session = await getSession();
+  const preview = !canBrowseListings(session?.user);
+  if (preview && session?.user.role !== "CAR_HIRER") redirect(roleHome(session?.user));
   const params = await searchParams;
   const value = (key: string) => {
     const raw = params[key];
@@ -39,7 +44,8 @@ async function CarHireListings({ searchParams }: { searchParams: SearchParams })
   const query = value("q").slice(0, 80);
   const requestedPage = parsePageParam(params.page);
   const where = {
-    available: true,
+    expiresAt: { gt: new Date() },
+    ...(preview ? { ownerId: session!.user.id } : { available: true }),
     owner: { active: true },
     ...(vehicleTypes.some(([type]) => type === selectedType) ? { vehicleType: selectedType as "SALOON" | "SUV" | "PICKUP" | "MINIBUS" | "BUS" | "TRUCK" | "LORRY" | "VAN" | "OTHER" } : {}),
     ...(CAR_HIRE_DISTRICTS.some(([district]) => district === selectedDistrict) ? { district: selectedDistrict as CarHireDistrictCode } : {}),
@@ -54,7 +60,7 @@ async function CarHireListings({ searchParams }: { searchParams: SearchParams })
     () => prisma.carHireListing.count({ where }),
     (skip, take) => prisma.carHireListing.findMany({
     where,
-    select: { id: true, name: true, model: true, vehicleType: true, lorryCapacityTons: true, contactPhone: true, district: true, dailyRateMWK: true },
+    select: { id: true, name: true, model: true, vehicleType: true, lorryCapacityTons: true, contactPhone: true, district: true, dailyRateMWK: true, available: true },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     skip, take,
   }));
@@ -68,14 +74,15 @@ async function CarHireListings({ searchParams }: { searchParams: SearchParams })
   };
 
   return <>
+    <div className="dashboard-intro"><p className="dashboard-eyebrow">SELF-DRIVE RENTALS</p><h1 className="page-title page-title--plain">{preview ? "Your car-hire listing previews" : "Car hire in Malawi"}</h1><p>{preview ? "Preview your own vehicles. Rental requests and contact actions are disabled." : "Browse vehicles available from local car-hire owners."}</p>{preview && <Link href={roleHome(session?.user)}>Back to your dashboard</Link>}</div>
     <CarHireSearch type={selectedType} district={selectedDistrict} query={query}/>
     {!total ? <div className="empty-state">No vehicles match your search. Try another type, district or search term.</div> : <div className="hire-results">
       <div className="results-bar"><p>{total} {total === 1 ? "vehicle" : "vehicles"} available</p></div>
       <div className="hire-listings">{listings.map((listing) => <article className="panel hire-card" key={listing.id}>
-        <div className="hire-card-top"><div><p className="dashboard-eyebrow">{carHireDistrictName(listing.district)} · {typeLabels[listing.vehicleType]}{listing.vehicleType === "LORRY" && listing.lorryCapacityTons ? ` · ${listing.lorryCapacityTons} ton${listing.lorryCapacityTons === 1 ? "" : "s"}` : ""}</p><h2>{listing.name}</h2></div><span className="status-badge status-accepted">Available</span></div>
+        <div className="hire-card-top"><div><p className="dashboard-eyebrow">{carHireDistrictName(listing.district)} · {typeLabels[listing.vehicleType]}{listing.vehicleType === "LORRY" && listing.lorryCapacityTons ? ` · ${listing.lorryCapacityTons} ton${listing.lorryCapacityTons === 1 ? "" : "s"}` : ""}</p><h2>{listing.name}</h2></div><span className={`status-badge ${listing.available ? "status-accepted" : "status-pending"}`}>{listing.available ? "Available" : "Unlisted"}</span></div>
         <p className="hire-model">{listing.model}</p>
         <div className="hire-card-bottom"><strong>{formatMWK(listing.dailyRateMWK)} <span>/ day</span></strong><Link className="btn btn-primary hire-card-action" href={`/car-hire/${listing.id}`}>View car <ArrowUpRight size={16} aria-hidden="true"/></Link></div>
-        {listing.contactPhone && <div className="hire-contact-links"><a href={`tel:${listing.contactPhone}`} aria-label={`Call ${displayPhone(listing.contactPhone)}`}><Phone size={15} aria-hidden="true"/>{displayPhone(listing.contactPhone)}</a><a href={`https://wa.me/${listing.contactPhone.replace(/\D/g, "")}`} target="_blank" rel="noreferrer"><MessageCircle size={16} aria-hidden="true"/>WhatsApp</a></div>}
+        {listing.contactPhone && !preview && <div className="hire-contact-links"><a href={`tel:${listing.contactPhone}`} aria-label={`Call ${displayPhone(listing.contactPhone)}`}><Phone size={15} aria-hidden="true"/>{displayPhone(listing.contactPhone)}</a><a href={`https://wa.me/${listing.contactPhone.replace(/\D/g, "")}`} target="_blank" rel="noreferrer"><MessageCircle size={16} aria-hidden="true"/>WhatsApp</a></div>}
       </article>)}</div>
       {pageCount > 1 && <nav className="results-pagination" aria-label="Car hire listing pages">
         {page > 1 ? <Link className="btn btn-secondary" href={pageHref(page - 1)}>Previous</Link> : <span aria-disabled="true">Previous</span>}

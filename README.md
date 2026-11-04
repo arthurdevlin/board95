@@ -38,4 +38,26 @@ Configure the deployment with a persistent PostgreSQL database, a strong `BETTER
 
 Apply committed migrations as a deployment step with `npx prisma migrate deploy`. The query-index migration improves public search, dashboard ordering, and relationship lookups. Test it against a staging copy first; index creation on large tables can temporarily block writes. The build generates the client but does not apply migrations.
 
-The homepage departure preview uses a public cache with a 15-second revalidation interval and 30-second expiry. Trip, inventory, and operator changes invalidate it immediately through server actions. Transport search and booking validation still query current database state. Session reuse is limited to one React server render.
+The homepage departure preview queries current database state on each request. It shows only trips departing today in Malawi time, strictly after now and no more than eight hours ahead. The registered bus company list uses a public cache with a 15-second revalidation interval and 30-second expiry. Trip, inventory, and operator changes invalidate it immediately through server actions. Session reuse is limited to one React server render. For signed-in users, Home opens the account overview; management dashboard links open the separate role-specific workspace.
+
+## Listing expiry and old listings
+
+Trip listings are archived 24 hours after departure. Car-hire listings expire seven days after publication or renewal; editing and availability changes do not renew them. The car-hire dashboard and listing manager show expiry dates and renewal buttons, with reminders during the final 24 hours. Renewal starts a new seven-day period from the time the operator clicks it. Expired vehicles immediately disappear from public results and cannot receive new requests, even if cleanup is delayed.
+
+Cleanup atomically copies listing details into separate history tables, moves booking/request links, then deletes active listings. Passenger bookings, chats, and rental requests survive. Active rental requests can still be handled after a listing expires. Stored names, rates, route details and timestamps remain in history. Photos remain referenced by URL; the archive is kept in the same PostgreSQL database, so this reduces active inventory rather than total retained storage.
+
+Operators and bus company members can open **Old listings / Download CSV** from their dashboard. Date filters use departure dates for trips and expiry dates for car hire, with inclusive Malawi calendar dates. CSV exports include the full matching range, with timestamps explicitly labeled UTC. Access is restricted to the operator's own listings or their bus company memberships; administrators can access all history.
+
+Apply migrations with `npx prisma migrate deploy` before running this version. Existing car-hire listings expire seven days after their original publication date; listings already older than a week will be archived on the first cleanup.
+
+On PostgreSQL hosts with `pg_cron` support (including Supabase), run `npm run db:schedule-listing-cleanup` once after migrations. It enables `pg_cron` and installs or updates a named job that runs every five minutes, including while the application is offline. No HTTP secret is required for this database job. To inspect it, query `cron.job` for `jobname = 'board95-archive-expired-listings'`; execution results are in `cron.job_run_details`. This setup command requires database administrator privileges.
+
+For hosts without `pg_cron`, configure a deployment scheduler to run cleanup **every five minutes**. Either run `npm run db:archive-listings` in the deployed application environment, or set a long random `CRON_SECRET` and have the scheduler make this authenticated request:
+
+```sh
+curl --fail --request POST \
+  --header "Authorization: Bearer $CRON_SECRET" \
+  https://YOUR_DEPLOYMENT/api/cron/archive-listings
+```
+
+The HTTP job is disabled until `CRON_SECRET` is configured. No browser session is required. Both cleanup methods process up to 1,000 trips and 1,000 car-hire listings per invocation; subsequent runs continue any backlog. Failed batches roll back and are retried on serialization conflicts. Repeat runs are safe. Physical removal happens on the next scheduled run after expiry, normally within five minutes. The scheduler must be enabled in the hosting environment; application deployment alone does not schedule it.

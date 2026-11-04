@@ -1,3 +1,4 @@
+import { withTripHistory } from "@/lib/listing-lifecycle";
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -27,7 +28,7 @@ async function BookingChatContent({ params, searchParams }: { params: Promise<{ 
   const session = await getSession();
   if (!session && !token) redirect("/bookings/lookup");
 
-  const booking = await prisma.booking.findUnique({
+  const bookingRow = await prisma.booking.findUnique({
     where: { id: bookingId },
     select: {
       id: true,
@@ -50,11 +51,22 @@ async function BookingChatContent({ params, searchParams }: { params: Promise<{ 
           departurePoint: { select: { name: true } },
           vehicle: { select: { model: true, plate: true } },
         },
+      }, tripHistory: {
+        select: {
+          origin: true,
+          destination: true,
+          departureAt: true,
+          operatorId: true,
+          operator: { select: { ownerId: true, owner: { select: { name: true } } } },
+          departurePoint: { select: { name: true } },
+          vehicle: { select: { model: true, plate: true } },
+        },
       },
     },
   });
-  if (!booking) redirect(session ? "/account" : "/bookings/lookup");
+  if (!bookingRow) redirect(session ? "/account" : "/bookings/lookup");
 
+  const booking = withTripHistory(bookingRow);
   const guestView = Boolean(
     booking.userId === null &&
     booking.guestAccessTokenExpiresAt &&

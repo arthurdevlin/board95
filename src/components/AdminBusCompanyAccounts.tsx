@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import PasswordFields from "@/components/PasswordFields";
 
 type Company = { id: string; name: string };
 type Member = {
@@ -42,8 +43,7 @@ export default function AdminBusCompanyAccounts({
       <label className="field"><span>Account holder name (new accounts)</span><input name="name" minLength={2} maxLength={100}/></label>
       <label className="field"><span>Account email</span><input name="email" type="email" required/></label>
       <label className="field"><span>Access level</span><select name="memberRole" required defaultValue="STAFF"><option value="ADMIN">Company administrator</option><option value="STAFF">Local staff</option></select></label>
-      <label className="field"><span>Password <em>(required for new accounts)</em></span><input name="password" type="password" autoComplete="new-password" minLength={8} maxLength={128}/></label>
-      <label className="field"><span>Re-enter password <em>(required for new accounts)</em></span><input name="confirmPassword" type="password" autoComplete="new-password" minLength={8} maxLength={128}/></label>
+      <PasswordFields label="Password (required for new accounts)" required={false}/>
       <button className="btn btn-secondary" type="submit">Assign or create account</button>
     </form>
     <h3 className="dashboard-subheading">{companies.find((company) => company.id === selectedCompanyId)?.name ?? "Company"} staff</h3>
