@@ -1,4 +1,6 @@
 "use client";
+import { Moon, Sun } from "lucide-react";
+
 import { useSyncExternalStore } from "react";
 
 // Subscribe to <html data-theme> changes so React reads the theme from the DOM
@@ -20,5 +22,5 @@ export default function ThemeToggle() {
     document.documentElement.dataset.theme = next;
     window.localStorage.setItem("board95-theme", next);
   }
-  return <button type="button" className="theme-toggle" role="switch" aria-checked={dark} onClick={toggle}><span className="theme-toggle-track"><span className="theme-toggle-thumb"/></span><span>{dark ? "Dark mode on" : "Dark mode off"}</span></button>;
+  return <button type="button" className="theme-toggle" role="switch" aria-checked={dark} onClick={toggle}><span className="theme-toggle-track"><span className="theme-toggle-thumb"/></span>{dark ? <Moon size={17} aria-hidden="true"/> : <Sun size={17} aria-hidden="true"/>}<span>{dark ? "Dark mode on" : "Dark mode off"}</span></button>;
 }

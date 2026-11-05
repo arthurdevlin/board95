@@ -13,8 +13,34 @@ datasource db {
 }
 
 enum City {
+  Balaka
   Blantyre
+  Chikwawa
+  Chiradzulu
+  Chitipa
+  Dedza
+  Dowa
+  Karonga
+  Kasungu
+  Likoma
   Lilongwe
+  Machinga
+  Mangochi
+  Mchinji
+  Mulanje
+  Mwanza
+  Mzimba
+  Neno
+  NkhataBay
+  Nkhotakota
+  Nsanje
+  Ntcheu
+  Ntchisi
+  Phalombe
+  Rumphi
+  Salima
+  Thyolo
+  Zomba
   Mzuzu
 }
 

@@ -1,4 +1,4 @@
-import { CITIES, type City, type TransportType } from "@/lib/cities";
+import { parseTransportLocation, type City, type TransportType } from "@/lib/cities";
 import { dayRange, toMalawiDate, toMalawiTime } from "@/lib/dates";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
@@ -105,8 +105,8 @@ export function parseFilters(params: RawParams): Filters {
 
   return {
     company: companyId,
-    origin: CITIES.find((c) => c === origin),
-    destination: CITIES.find((c) => c === destination),
+    origin: parseTransportLocation(origin ?? ""),
+    destination: parseTransportLocation(destination ?? ""),
     date: date && dayRange(date) ? date : undefined,
     invalidDate: Boolean(date && !dayRange(date)),
     type: companyId ? "bus" : type === "bus" || type === "taxi" ? type : undefined,
@@ -161,12 +161,13 @@ export async function searchTrips(filters: Filters, requestedPage = 1, previewUs
 }
 
 // Evaluate per request so departures and the Malawi day boundary cannot go stale.
-export async function getUpcomingTrips(limit: number, now = new Date()): Promise<TripListing[]> {
+export async function getUpcomingTrips(limit: number, now = new Date(), type?: TransportType): Promise<TripListing[]> {
   const today = toMalawiDate(now);
   const range = dayRange(today)!;
-  await ensureBusDepartures(today);
+  if (type !== "taxi") await ensureBusDepartures(today);
   const rows = await prisma.trip.findMany({
     where: {
+      ...(type ? { type: type === "bus" ? "BUS" as const : "TAXI" as const } : {}),
       cancelled: false,
       vehicle: { active: true },
       OR: [{ scheduleId: null }, { scheduleOverride: true }, { schedule: { active: true } }],

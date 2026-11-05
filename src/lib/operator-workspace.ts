@@ -14,7 +14,7 @@ export function operatorWorkspace(kinds: readonly OperatorKind[], busMember = fa
     vehicles: busOnly ? "Buses" : taxiOnly ? "Taxis" : "Vehicles",
     trips: busOnly ? "Bus trips" : taxiOnly ? "Taxi trips" : "Trips",
     description: busOnly
-      ? "Manage your buses, set recurring timetables and respond to passenger bookings."
+      ? "Manage your buses, set Daily Bus Schedules and respond to passenger bookings."
       : taxiOnly
         ? "Manage your taxis, schedule daily trips and respond to passenger bookings."
         : "Manage your operator profiles, departures and passenger bookings.",

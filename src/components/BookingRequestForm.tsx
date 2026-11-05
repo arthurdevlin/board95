@@ -1,18 +1,24 @@
 "use client";
+import { Check, Eye, MessageCircle, Send, Ticket, X } from "lucide-react";
+
 
 import { useRef } from "react";
 import { useActionState } from "react";
 import Link from "next/link";
 import { requestSeatAction, type BookingRequestState } from "@/lib/actions";
+import BookingReference from "@/components/BookingReference";
+import ReferenceLoading from "@/components/ReferenceLoading";
 
 const initialState: BookingRequestState = { status: "idle", message: "" };
 
 export default function BookingRequestForm({
   tripId,
+  tripLabel,
   pickupAvailable,
   soldOut,
 }: {
   tripId: string;
+  tripLabel?: string;
   pickupAvailable: boolean;
   soldOut: boolean;
 }) {
@@ -28,17 +34,19 @@ export default function BookingRequestForm({
     <div className="trip-cta">
       <button
         type="button"
-        className="btn btn-primary btn-block"
+        className="btn btn-primary trip-book-button"
+        aria-label={tripLabel ? `${state.status === "success" ? "View booking for" : soldOut ? "Fully booked:" : "Book a seat on"} ${tripLabel}` : undefined}
         disabled={soldOut}
         onClick={() => dialogRef.current?.showModal()}
-      >
-        {soldOut ? "Full" : state.status === "success" ? "View booking confirmation" : "Book this trip"}
+      >{state.status === "success" ? <Eye size={16} aria-hidden="true"/> : <Ticket size={16} aria-hidden="true"/>}
+        {soldOut ? "Fully booked" : state.status === "success" ? "View booking" : "Book seat"}
       </button>
 
       <dialog
         ref={dialogRef}
         className="booking-dialog"
         aria-labelledby={`booking-title-${tripId}`}
+        onCancel={(event) => { if (pending) event.preventDefault(); }}
         onClick={(event) => {
           if (event.target === dialogRef.current && !pending) closeDialog();
         }}
@@ -50,18 +58,18 @@ export default function BookingRequestForm({
               <h2 id={`booking-title-${tripId}`}>{state.status === "success" ? "Request received" : "Book this trip"}</h2>
               <p>Enter your contact details so the operator can confirm your seat.</p>
             </div>
-            <button type="button" className="booking-dialog-close" onClick={closeDialog} aria-label="Close booking form" disabled={pending}>×</button>
+            <button type="button" className="booking-dialog-close" onClick={closeDialog} aria-label="Close booking form" disabled={pending}><X size={18} aria-hidden="true"/></button>
           </div>
 
           {state.status === "success" ? (
             <div className="alert alert-info booking-feedback" role="status">
               <p>{state.message}</p>
-              {state.reference && <p className="booking-reference">Reference: <strong>{state.reference}</strong></p>}
-              <p className="booking-account-note">Keep this reference. Signed-in bookings are also saved in My account.</p>
-              {state.guestChatUrl && <Link className="btn btn-secondary booking-done" href={state.guestChatUrl}>Open your booking and chat</Link>}
+              {state.reference && <BookingReference reference={state.reference}/>}
+              <p className="booking-account-note">Signed-in bookings are also saved in My account.</p>
+              {state.guestChatUrl && <Link className="btn btn-secondary booking-done" href={state.guestChatUrl}><MessageCircle size={16} aria-hidden="true"/>Open your booking and chat</Link>}
               {state.guestChatUrl && <p className="booking-account-note">Save this private chat link; it is your guest access to the booking.</p>}
               {state.reference && <p className="booking-account-note">Lost the link? <Link href="/bookings/lookup">Find a guest booking</Link> with your reference and mobile number.</p>}
-              <button type="button" className="btn btn-secondary booking-done" onClick={closeDialog}>Done</button>
+              <button type="button" className="btn btn-secondary booking-done" onClick={closeDialog}><Check size={16} aria-hidden="true"/>Done</button>
             </div>
           ) : (
             <form action={formAction} aria-busy={pending}>
@@ -73,7 +81,7 @@ export default function BookingRequestForm({
                 </label>
                 <label className="field">
                   <span>Mobile number</span>
-                  <input name="phone" type="tel" autoComplete="tel" inputMode="tel" placeholder="0991 234 567" required pattern="(?:[+]265[ ]?(?:8|9|2)[0-9]{2}[ ]?[0-9]{3}[ ]?[0-9]{3}|0(?:8|9|2)[0-9]{2}[ ]?[0-9]{3}[ ]?[0-9]{3})" title="Use a Malawi mobile number, such as 0991 234 567 or +265 991 234 567" disabled={pending} />
+                  <input name="phone" type="tel" autoComplete="tel" inputMode="tel" placeholder="0993 661 661 or 993661661" required maxLength={32} disabled={pending} />
                 </label>
                 <label className="field">
                   <span>Email <em>(optional)</em></span>
@@ -89,7 +97,7 @@ export default function BookingRequestForm({
                     <input name="pickupLocation" autoComplete="street-address" maxLength={200} placeholder="Area, landmark or address" disabled={pending} />
                   </label>
                 </>}
-                <button type="submit" className="btn btn-primary btn-block" disabled={pending}>
+                <button type="submit" className="btn btn-primary btn-block" disabled={pending}><Send size={16} aria-hidden="true"/>
                   {pending ? "Sending request…" : "Submit booking request"}
                 </button>
               </div>
@@ -98,6 +106,7 @@ export default function BookingRequestForm({
             </form>
           )}
         </div>
+        <ReferenceLoading pending={pending}/>
       </dialog>
     </div>
   );

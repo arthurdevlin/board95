@@ -1,3 +1,8 @@
+
+import { ArrowLeft } from "lucide-react";
+import PageIntro from "@/components/PageIntro";
+
+import { transportLocationName } from "@/lib/cities";
 import { withTripHistory } from "@/lib/listing-lifecycle";
 import { Suspense } from "react";
 import type { Metadata } from "next";
@@ -10,6 +15,7 @@ import { matchesGuestToken } from "@/lib/guest-access";
 import { formatMWK, formatTimestamp } from "@/lib/format";
 import RouteLoading from "@/components/RouteLoading";
 import SendBookingMessageButton from "@/components/SendBookingMessageButton";
+import { ReferenceScreenshotNotice } from "@/components/BookingReference";
 
 export const metadata: Metadata = { title: "Booking chat | Board95", referrer: "no-referrer", robots: { index: false, follow: false } };
 
@@ -100,13 +106,13 @@ async function BookingChatContent({ params, searchParams }: { params: Promise<{ 
     : booking.guestName ?? "the passenger";
 
   return <section className="chat-page">
-    <div className="dashboard-intro"><p className="dashboard-eyebrow">BOOKING MESSAGES</p><h1 className="page-title page-title--plain">{booking.trip.origin} to {booking.trip.destination}</h1><p>Chat with {conversationPartner} about booking {booking.id.slice(-8).toUpperCase()}.</p><p className="dashboard-help">Messages are saved here and email notifications are sent. Refresh to check for replies.</p></div>
-    <div className="panel ticket-summary"><div className="ticket-summary-heading"><div><p className="dashboard-eyebrow">YOUR BOOKING TICKET</p><h2>{booking.trip.origin} → {booking.trip.destination}</h2></div><span className={`status-badge status-${booking.status.toLowerCase()}`}>{booking.status}</span></div><dl className="ticket-summary-details"><div><dt>Reference</dt><dd>{booking.id.slice(-8).toUpperCase()}</dd></div><div><dt>Departure</dt><dd>{formatTimestamp(booking.trip.departureAt)}</dd></div><div><dt>Leaving from</dt><dd>{booking.trip.departurePoint.name}</dd></div><div><dt>Vehicle</dt><dd>{booking.trip.vehicle.model} · {booking.trip.vehicle.plate}</dd></div><div><dt>Seat(s)</dt><dd>{booking.seats}</dd></div><div><dt>Total</dt><dd>{formatMWK(booking.totalMWK)}</dd></div>{booking.pickupRequested && <div><dt>Pickup requested</dt><dd>{booking.pickupLocation ?? "Yes"}</dd></div>}</dl></div>
+    <PageIntro className="dashboard-intro"><p className="dashboard-eyebrow">BOOKING MESSAGES</p><h1 className="page-title page-title--plain">{transportLocationName(booking.trip.origin)} to {transportLocationName(booking.trip.destination)}</h1><p>Chat with {conversationPartner} about booking {booking.id.slice(-8).toUpperCase()}.</p><p className="dashboard-help">Messages are saved here and email notifications are sent. Refresh to check for replies.</p></PageIntro>
+    <div className="panel ticket-summary"><div className="ticket-summary-heading"><div><p className="dashboard-eyebrow">YOUR BOOKING TICKET</p><h2>{transportLocationName(booking.trip.origin)} → {transportLocationName(booking.trip.destination)}</h2></div><span className={`status-badge status-${booking.status.toLowerCase()}`}>{booking.status}</span></div><dl className="ticket-summary-details"><div><dt>Reference</dt><dd>{booking.id.slice(-8).toUpperCase()}</dd></div><div><dt>Departure</dt><dd>{formatTimestamp(booking.trip.departureAt)}</dd></div><div><dt>Leaving from</dt><dd>{booking.trip.departurePoint.name}</dd></div><div><dt>Vehicle</dt><dd>{booking.trip.vehicle.model} · {booking.trip.vehicle.plate}</dd></div><div><dt>Seat(s)</dt><dd>{booking.seats}</dd></div><div><dt>Total</dt><dd>{formatMWK(booking.totalMWK)}</dd></div>{booking.pickupRequested && <div><dt>Pickup requested</dt><dd>{booking.pickupLocation ?? "Yes"}</dd></div>}</dl>{(guestView || isPassenger) && <ReferenceScreenshotNotice/>}</div>
     <section className="chat-window" aria-label="Booking conversation">
       {notice === "rate-limit" && <p className="alert alert-error" role="alert">You’ve sent several messages recently. Wait a few minutes, then try again.</p>}
       {messages.length === 0 ? <div className="chat-empty"><span className="chat-avatar" aria-hidden="true">B95</span><div><strong>Board95 booking chat</strong><p>Ask about pickup, departure or your booking to start the conversation.</p></div></div> : <div className="chat-messages" aria-label="Messages">{messages.map((message) => { const mine = guestView ? message.senderId === null : message.senderId === session?.user.id; return <article className={`chat-message ${mine ? "is-mine" : "is-theirs"}`} key={message.id}><p className="chat-sender">{mine ? "You" : message.sender?.name ?? message.guestSenderName ?? "Passenger"}</p><p className="chat-bubble">{message.body}</p><time dateTime={message.createdAt.toISOString()}>{formatTimestamp(message.createdAt)}</time></article>; })}</div>}
       <form action={sendBookingMessageAction} className="chat-compose"><input type="hidden" name="bookingId" value={booking.id}/>{guestView && <input type="hidden" name="guestToken" value={token}/>}<label className="sr-only" htmlFor="booking-message">Write a message</label><textarea id="booking-message" name="body" required maxLength={1000} rows={2} placeholder="Write a message…"/><SendBookingMessageButton /></form>
     </section>
-    <Link className="btn btn-secondary chat-back" href={guestView ? "/" : isOperator ? "/operator" : isAdmin ? "/admin" : "/account"}>Back to dashboard</Link>
+    <Link className="btn btn-secondary chat-back" href={guestView ? "/" : isOperator ? "/operator" : isAdmin ? "/admin" : "/account"}><ArrowLeft size={16} aria-hidden="true"/>Back to dashboard</Link>
   </section>;
 }

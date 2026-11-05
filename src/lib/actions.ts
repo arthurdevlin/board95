@@ -11,10 +11,11 @@ import { dayRange, toMalawiDate } from "@/lib/dates";
 import { prisma } from "@/lib/prisma";
 import { board95Url, deliverEmailDelivery, sendBoard95Email } from "@/lib/email";
 import { allowRequest } from "@/lib/rate-limit";
-import { hashGuestToken, matchesGuestToken, normalizeMalawiPhone } from "@/lib/guest-access";
+import { hashGuestToken, matchesGuestToken, normalizeMalawiPhone, normalizeBookingReference } from "@/lib/guest-access";
 import { removeCarPhoto, storeCarPhoto } from "@/lib/car-photo-storage";
 import { CAR_HIRE_DISTRICTS, type CarHireDistrictCode } from "@/lib/car-hire-districts";
 import { isDatabaseAmount, isSelfServiceApplicationKind } from "@/lib/validation";
+import { parseTransportLocation, transportLocationName } from "@/lib/cities";
 import { canApplyForOperator, canBrowseListings } from "@/lib/access";
 
 export type BookingRequestState = {
@@ -105,11 +106,8 @@ export async function requestSeatAction(
   if (guestName.length < 2 || guestName.length > 100) {
     return { status: "error", message: "Enter the passenger’s name (2–100 characters)." };
   }
-  if (!/^(?:\+265|0)(?:8|9|2)\d{8}$/.test(rawPhone)) {
-    return { status: "error", message: "Enter a valid Malawi mobile number, such as 0991 234 567 or +265 991 234 567." };
-  }
   const phone = normalizeMalawiPhone(rawPhone);
-  if (!phone) return { status: "error", message: "Enter a valid Malawi mobile number." };
+  if (!phone) return { status: "error", message: "Enter a valid Malawi mobile number, such as 0993 661 661, 993661661 or +265 993 661 661." };
   if (!(await allowRequest("booking-phone", 3, 60 * 60 * 1000, phone))) {
     return { status: "error", message: "Too many booking attempts for this mobile number. Try again later." };
   }
@@ -211,7 +209,7 @@ export async function requestSeatAction(
     include: { user: { select: { email: true } }, trip: { include: { operator: { include: { owner: { select: { email: true } } } } } }, tripHistory: { include: { operator: { include: { owner: { select: { email: true } } } } } } },
   }).then((row) => row ? withTripHistory(row) : null);
   if (bookingForEmail) {
-    const route = `${bookingForEmail.trip.origin} to ${bookingForEmail.trip.destination}`;
+    const route = `${transportLocationName(bookingForEmail.trip.origin)} to ${transportLocationName(bookingForEmail.trip.destination)}`;
     const reference = bookingForEmail.id.slice(-8).toUpperCase();
     const departure = formatTimestamp(bookingForEmail.trip.departureAt);
     const operatorEmail = bookingForEmail.trip.operator.owner?.email ?? process.env.BOARD95_ADMIN_EMAIL;
@@ -523,7 +521,7 @@ export async function updateBookingStatusAction(formData: FormData) {
   await sendBoard95Email({
     to: updatedBooking?.guestEmail ?? updatedBooking?.user?.email,
     subject: `Booking ${nextStatus.toLowerCase()}`,
-    lines: [`Your request for ${updatedBooking?.trip.origin ?? ""} to ${updatedBooking?.trip.destination ?? ""} is now ${nextStatus.toLowerCase()}.`, `Reference: ${booking.id.slice(-8).toUpperCase()}.`, ...(session.user.role === "ADMIN" ? ["This decision was made by a Board95 administrator."] : [])],
+    lines: [`Your request for ${transportLocationName(updatedBooking?.trip.origin ?? "")} to ${transportLocationName(updatedBooking?.trip.destination ?? "")} is now ${nextStatus.toLowerCase()}.`, `Reference: ${booking.id.slice(-8).toUpperCase()}.`, ...(session.user.role === "ADMIN" ? ["This decision was made by a Board95 administrator."] : [])],
     action: { label: "View your booking", href: board95Url(booking.userId ? "/account" : "/bookings/lookup") },
   });
 }
@@ -549,7 +547,7 @@ export async function cancelPassengerBookingAction(formData: FormData) {
   revalidatePath("/transport");
   const details = await prisma.booking.findUnique({ where: { id: booking.id }, select: { trip: { select: { origin: true, destination: true, operator: { select: { owner: { select: { email: true } } } } } }, tripHistory: { select: { origin: true, destination: true, operator: { select: { owner: { select: { email: true } } } } } } } }).then((row) => row ? withTripHistory(row) : null);
   await Promise.all([
-    sendBoard95Email({ to: session.user.email, subject: "Booking cancelled", lines: [`Your request for ${details?.trip.origin ?? ""} to ${details?.trip.destination ?? ""} was cancelled.`, `Reference: ${booking.id.slice(-8).toUpperCase()}.`] }),
+    sendBoard95Email({ to: session.user.email, subject: "Booking cancelled", lines: [`Your request for ${transportLocationName(details?.trip.origin ?? "")} to ${transportLocationName(details?.trip.destination ?? "")} was cancelled.`, `Reference: ${booking.id.slice(-8).toUpperCase()}.`] }),
     sendBoard95Email({ to: details?.trip.operator.owner?.email, subject: "Passenger cancelled a booking", lines: [`${booking.guestName ?? "A passenger"} cancelled a booking.`, `Reference: ${booking.id.slice(-8).toUpperCase()}.`] }),
   ]);
 }
@@ -623,7 +621,7 @@ export async function deleteVehicleAction(formData: FormData) {
   const vehicleId = String(formData.get("vehicleId") ?? "");
   const vehicle = await prisma.vehicle.findFirst({ where: { id: vehicleId, ...(session.user.role === "ADMIN" ? {} : { operator: { ownerId: session.user.id } }) }, include: { _count: { select: { trips: true, busSchedules: true } } } });
   if (!vehicle) throw new Error("Vehicle not found.");
-  if (vehicle._count.busSchedules) throw new Error("This bus has a recurring timetable. Keep the vehicle and edit or pause its services instead.");
+  if (vehicle._count.busSchedules) throw new Error("This bus has a Daily Bus Schedule. Keep the vehicle and edit or pause its services instead.");
   if (vehicle._count.trips) throw new Error("This vehicle has trip history. Edit its details or remove its unbooked trips before deleting it.");
   await prisma.vehicle.delete({ where: { id: vehicleId } });
   updateTag("public-trips");
@@ -635,24 +633,24 @@ export async function updateTripScheduleAction(formData: FormData) {
   const session = await getSession();
   if (!session?.user?.id || !["OWNER", "ADMIN"].includes(session.user.role)) throw new Error("Operator access required.");
   const tripId = String(formData.get("tripId") ?? "");
-  const origin = String(formData.get("origin") ?? "");
-  const destination = String(formData.get("destination") ?? "");
+  const origin = parseTransportLocation(String(formData.get("origin") ?? ""));
+  const destination = parseTransportLocation(String(formData.get("destination") ?? ""));
   const date = String(formData.get("date") ?? "");
   const time = String(formData.get("time") ?? "");
   const departureName = String(formData.get("departurePoint") ?? "").trim();
   const fareMWK = Number(formData.get("fareMWK"));
   const pickupAvailable = formData.get("pickupAvailable") === "on";
   const pickupFeeMWK = pickupAvailable ? Number(formData.get("pickupFeeMWK") ?? 0) : null;
-  if (!["Blantyre", "Lilongwe", "Mzuzu"].includes(origin) || !["Blantyre", "Lilongwe", "Mzuzu"].includes(destination) || origin === destination) throw new Error("Choose two different Malawi cities.");
+  if (!origin || !destination || origin === destination) throw new Error("Choose two different Malawi districts.");
   if (departureName.length < 2 || departureName.length > 100 || !isDatabaseAmount(fareMWK) || !isDatabaseAmount(fareMWK + (pickupFeeMWK ?? 0)) || (pickupFeeMWK !== null && (!isDatabaseAmount(pickupFeeMWK, 0)))) throw new Error("Check the departure date, time, location and fare.");
   const departureAt = parseMalawiDeparture(date, time);
   if (!departureAt || departureAt <= new Date()) throw new Error("Only valid future departures can be edited.");
   const trip = await prisma.trip.findFirst({ where: { id: tripId, ...(session.user.role === "ADMIN" ? {} : { operator: { ownerId: session.user.id, active: true, verified: true } }) }, include: { operator: true } });
   if (!trip) throw new Error("Trip not found or your operator profile is not approved.");
-  if (trip.scheduleId) throw new Error("Edit this bus through its recurring timetable.");
+  if (trip.scheduleId) throw new Error("Edit this bus through its Daily Bus Schedule.");
   const dayRangeForTrip = dayRange(date);
   if (!dayRangeForTrip) throw new Error("Departure must be a valid calendar date.");
-  const pointData = { city: origin as "Blantyre" | "Lilongwe" | "Mzuzu", name: departureName, kind: trip.type === "BUS" ? "STATION" as const : "STAGE" as const, operatorId: trip.type === "BUS" ? trip.operatorId : null };
+  const pointData = { city: origin, name: departureName, kind: trip.type === "BUS" ? "STATION" as const : "STAGE" as const, operatorId: trip.type === "BUS" ? trip.operatorId : null };
   await prisma.$transaction(async (tx) => {
     if (await tx.booking.count({ where: { tripId } })) throw new Error("This trip has booking history. Its schedule is locked to protect passengers; contact support to resolve it.");
     if (trip.type === "TAXI" && await tx.trip.findFirst({ where: { id: { not: trip.id }, vehicleId: trip.vehicleId, departureAt: { gte: dayRangeForTrip.start, lt: dayRangeForTrip.end } }, select: { id: true } })) {
@@ -662,7 +660,7 @@ export async function updateTripScheduleAction(formData: FormData) {
     const point = pointUsers === 1
       ? await tx.departurePoint.update({ where: { id: trip.departurePointId }, data: pointData })
       : await tx.departurePoint.create({ data: pointData });
-    await tx.trip.update({ where: { id: trip.id }, data: { origin: origin as "Blantyre" | "Lilongwe" | "Mzuzu", destination: destination as "Blantyre" | "Lilongwe" | "Mzuzu", departureAt, departurePointId: point.id, fareMWK, pickupAvailable, pickupFeeMWK } });
+    await tx.trip.update({ where: { id: trip.id }, data: { origin: origin, destination: destination, departureAt, departurePointId: point.id, fareMWK, pickupAvailable, pickupFeeMWK } });
   }, { isolationLevel: "Serializable" });
   updateTag("public-trips");
   revalidatePath("/operator");
@@ -677,7 +675,7 @@ export async function deleteTripScheduleAction(formData: FormData) {
   const tripId = String(formData.get("tripId") ?? "");
   const trip = await prisma.trip.findFirst({ where: { id: tripId, ...(session.user.role === "ADMIN" ? {} : { operator: { ownerId: session.user.id } }) }, include: { _count: { select: { bookings: true } } } });
   if (!trip) throw new Error("Trip not found.");
-  if (trip.scheduleId) throw new Error("Pause this bus through its recurring timetable instead of deleting a daily departure.");
+  if (trip.scheduleId) throw new Error("Pause this bus through its Daily Bus Schedule instead of deleting a daily departure.");
   if (trip._count.bookings) throw new Error("This trip has booking history and cannot be deleted. Contact passengers and support to cancel it safely.");
   await prisma.trip.delete({ where: { id: tripId } });
   updateTag("public-trips");
@@ -700,19 +698,18 @@ export async function archiveBookingHistoryAction() {
 export type GuestLookupState = { error: string | null };
 
 export async function lookupGuestBookingAction(_previous: GuestLookupState, formData: FormData): Promise<GuestLookupState> {
+  const reference = normalizeBookingReference(String(formData.get("reference") ?? ""));
+  const phone = normalizeMalawiPhone(String(formData.get("phone") ?? ""));
+  if (!reference) return { error: "Enter the 8-character reference from your booking confirmation. Uppercase and lowercase both work." };
+  if (!phone) return { error: "Enter the mobile number used to book, such as 0993 661 661, 993661661, 265993661661 or +265 993 661 661." };
   if (!(await allowRequest("guest-booking-lookup", 5, 15 * 60 * 1000))) {
     return { error: "Too many lookup attempts. Wait 15 minutes before trying again." };
-  }
-  const reference = String(formData.get("reference") ?? "").trim().toLowerCase();
-  const phone = normalizeMalawiPhone(String(formData.get("phone") ?? ""));
-  if (!/^[a-z0-9]{8}$/.test(reference) || !phone) {
-    return { error: "Enter the 8-character booking reference and the same Malawi mobile number used for the booking." };
   }
   const booking = await prisma.booking.findFirst({
     where: { id: { endsWith: reference, mode: "insensitive" }, guestPhone: phone, userId: null },
     select: { id: true },
   });
-  if (!booking) return { error: "We could not match those details to a guest booking." };
+  if (!booking) return { error: "We could not match that reference and mobile number to a guest booking. If you booked while signed in, open My bookings in your account." };
   const token = randomBytes(32).toString("base64url");
   await prisma.booking.update({ where: { id: booking.id }, data: { guestAccessTokenHash: hashGuestToken(token), guestAccessTokenExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) } });
   redirect(`/bookings/${booking.id}/chat?token=${encodeURIComponent(token)}`);
@@ -775,7 +772,7 @@ export async function sendBookingMessageAction(formData: FormData): Promise<neve
   await sendBoard95Email({
     to: recipient,
     subject: "New message about your booking",
-    lines: [`${senderName} sent a message about ${booking.trip.origin} to ${booking.trip.destination}.`, body],
+    lines: [`${senderName} sent a message about ${transportLocationName(booking.trip.origin)} to ${transportLocationName(booking.trip.destination)}.`, body],
     action: {
       label: `Reply to ${recipientName}`,
       href: board95Url(booking.userId === null && !guestAuthorized
@@ -799,8 +796,8 @@ export async function createOperatorTripAction(formData: FormData) {
   const name = String(formData.get("vehicleModel") ?? "").trim();
   const plate = String(formData.get("plate") ?? "").trim().toUpperCase();
   const seats = Number(formData.get("seats"));
-  const origin = String(formData.get("origin") ?? "");
-  const destination = String(formData.get("destination") ?? "");
+  const origin = parseTransportLocation(String(formData.get("origin") ?? ""));
+  const destination = parseTransportLocation(String(formData.get("destination") ?? ""));
   const date = String(formData.get("date") ?? "");
   const time = String(formData.get("time") ?? "");
   const departureName = String(formData.get("departurePoint") ?? "").trim();
@@ -808,14 +805,14 @@ export async function createOperatorTripAction(formData: FormData) {
   const pickupAvailable = formData.get("pickupAvailable") === "on";
   const pickupFeeMWK = pickupAvailable ? Number(formData.get("pickupFeeMWK") ?? 0) : null;
   if (!operatorId || operatorId.length > 64 || name.length < 2 || name.length > 80 || !/^[A-Z0-9 -]{3,20}$/.test(plate)) throw new Error("Enter a valid operator, vehicle model and plate.");
-  if (!Number.isSafeInteger(seats) || seats < 1 || seats > 100 || !["Blantyre", "Lilongwe", "Mzuzu"].includes(origin) || !["Blantyre", "Lilongwe", "Mzuzu"].includes(destination) || origin === destination) throw new Error("Check the route and seat count.");
+  if (!Number.isSafeInteger(seats) || seats < 1 || seats > 100 || !origin || !destination || origin === destination) throw new Error("Check the route and seat count.");
   if (departureName.length < 2 || departureName.length > 100 || !isDatabaseAmount(fareMWK) || !isDatabaseAmount(fareMWK + (pickupFeeMWK ?? 0)) || (pickupFeeMWK !== null && (!isDatabaseAmount(pickupFeeMWK, 0)))) throw new Error("Check the departure date, time, location and fare.");
   const departureAt = parseMalawiDeparture(date, time);
   if (!departureAt || departureAt <= new Date()) throw new Error("Departure must be a valid future date and time.");
 
   const operator = await prisma.operator.findFirst({ where: { id: operatorId, ...(session.user.role === "ADMIN" ? {} : session.user.role === "OWNER" ? { ownerId: session.user.id } : { members: { some: { userId: session.user.id, role: "ADMIN" } } }), active: true, verified: true } });
   if (!operator) throw new Error("This operator has not been approved or is inactive.");
-  const city = origin as "Blantyre" | "Lilongwe" | "Mzuzu";
+  const city = origin;
   const dayRangeForTrip = dayRange(date);
   if (!dayRangeForTrip) throw new Error("Departure must be a valid calendar date.");
   // Keep vehicle, departure point, and trip creation atomic. Serializable isolation
@@ -838,7 +835,7 @@ export async function createOperatorTripAction(formData: FormData) {
       departurePointId: point.id,
       type: operator.kind === "BUS_COMPANY" ? "BUS" : "TAXI",
       origin: city,
-      destination: destination as "Blantyre" | "Lilongwe" | "Mzuzu",
+      destination: destination,
       departureAt,
       fareMWK,
       seatsTotal: vehicle.seats,

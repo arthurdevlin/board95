@@ -1,4 +1,6 @@
 "use client";
+import { Eye, EyeOff, LoaderCircle, LogIn, UserPlus } from "lucide-react";
+
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -24,14 +26,18 @@ export default function AuthForm({
   mode,
   next = "/account",
   googleEnabled = false,
+  initialAccountType = "CUSTOMER",
+  providerSignup = false,
 }: {
   mode: Mode;
   next?: string;
   googleEnabled?: boolean;
+  initialAccountType?: SignupAccountType;
+  providerSignup?: boolean;
 }) {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [accountType, setAccountType] = useState<SignupAccountType>("CUSTOMER");
+  const [accountType, setAccountType] = useState<SignupAccountType>(initialAccountType);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -106,10 +112,10 @@ export default function AuthForm({
 
   return (
     <div className="auth-shell">
-      <div className="auth-heading">
-        <p className="auth-eyebrow">BOARD95 ACCOUNT</p>
-        <h1>{mode === "sign-up" ? "Create your account" : "Welcome back"}</h1>
-        <p>{mode === "sign-up" ? "Choose how you’ll use Board95." : "Sign in to continue to Board95."}</p>
+      <div className="auth-heading"><span className="hero-watermark" aria-hidden="true">95</span>
+        <p className="auth-eyebrow">{mode === "sign-up" && accountType === "CAR_HIRER" ? "CAR HIRE OWNERS" : "BOARD95 ACCOUNT"}</p>
+        <h1>{mode === "sign-up" ? accountType === "CAR_HIRER" ? "Create your car-hire account" : "Create your account" : "Welcome back"}</h1>
+        <p>{mode === "sign-up" ? accountType === "CAR_HIRER" ? "Add your business details to apply. Once approved, you can post your cars and manage hire requests." : "Choose how you’ll use Board95." : "Sign in to continue to Board95."}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="form-card" aria-busy={pending}>
@@ -124,11 +130,11 @@ export default function AuthForm({
             <div className="field">
               <label htmlFor="accountType">Create account as</label>
               <select id="accountType" name="accountType" value={accountType} onChange={(event) => setAccountType(event.target.value as SignupAccountType)} disabled={pending}>
-                <option value="CUSTOMER">Passenger</option>
+                {!providerSignup && <option value="CUSTOMER">Passenger</option>}
                 <option value="TAXI_OWNER">Taxi driver</option>
                 <option value="CAR_HIRER">Car hire provider</option>
               </select>
-              <p className="field-hint">Passengers can book and track requests. Driver and car-hire accounts submit details for approval before managing listings.</p>
+              <p className="field-hint">{providerSignup ? "Choose a provider account. Your application is reviewed before you can publish listings." : "Passengers can book and track requests. Driver and car-hire accounts submit details for approval before managing listings."}</p>
             </div>
             {accountType !== "CUSTOMER" && <>
               <div className="field">
@@ -152,7 +158,7 @@ export default function AuthForm({
             <div className="field-row">
               <input id="password" name="password" type={showPassword ? "text" : "password"} autoComplete={mode === "sign-up" ? "new-password" : "current-password"} required minLength={8} disabled={pending} />
               <button type="button" className="field-toggle" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword} disabled={pending}>
-                {showPassword ? "Hide" : "Show"}
+                {showPassword ? <EyeOff size={18} aria-hidden="true"/> : <Eye size={18} aria-hidden="true"/>}
               </button>
             </div>
             {mode === "sign-up" && <p className="field-hint">At least 8 characters.</p>}
@@ -164,7 +170,8 @@ export default function AuthForm({
           </div>}
 
           <button type="submit" className="btn btn-primary btn-block" disabled={pending}>
-            {pending ? mode === "sign-up" ? "Creating account…" : "Signing in…" : mode === "sign-up" ? "Create account" : "Sign in"}
+            {pending ? <LoaderCircle className="button-spinner" size={17} aria-hidden="true"/> : mode === "sign-up" ? <UserPlus size={17} aria-hidden="true"/> : <LogIn size={17} aria-hidden="true"/>}
+            {pending ? mode === "sign-up" ? "Creating account…" : "Signing in…" : mode === "sign-up" ? accountType === "CAR_HIRER" ? "Create car-hire account" : "Create account" : "Sign in"}
           </button>
           {mode === "sign-in" && <p className="field-hint"><Link href="/forgot-password">Forgot password?</Link></p>}
           {googleEnabled && (mode === "sign-in" || accountType === "CUSTOMER") && <>

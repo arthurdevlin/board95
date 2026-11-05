@@ -4,7 +4,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { isDatabaseAmount } from "@/lib/validation";
-import { CITIES, type City } from "@/lib/cities";
+import { parseTransportLocation } from "@/lib/cities";
 
 export type BusScheduleState = { status: "idle" | "success" | "error"; message: string };
 class ScheduleInputError extends Error {}
@@ -14,8 +14,8 @@ export async function saveBusScheduleAction(_previous: BusScheduleState, formDat
   if (!session?.user.id || !["ADMIN", "OWNER", "CUSTOMER"].includes(session.user.role)) return { status: "error", message: "Bus company administrator access required." };
   const operatorId = String(formData.get("operatorId") ?? "");
   const scheduleId = String(formData.get("scheduleId") ?? "");
-  const origin = String(formData.get("origin") ?? "") as City;
-  const destination = String(formData.get("destination") ?? "") as City;
+  const origin = parseTransportLocation(String(formData.get("origin") ?? ""));
+  const destination = parseTransportLocation(String(formData.get("destination") ?? ""));
   const departureTime = String(formData.get("time") ?? "");
   const weekdays = [...new Set(formData.getAll("weekdays").map(Number))].sort();
   const departureName = String(formData.get("departurePoint") ?? "").trim();
@@ -27,7 +27,7 @@ export async function saveBusScheduleAction(_previous: BusScheduleState, formDat
   const model = String(formData.get("vehicleModel") ?? "").trim();
   const plate = String(formData.get("plate") ?? "").trim().toUpperCase();
   if (!operatorId || operatorId.length > 64 || scheduleId.length > 64) return { status: "error", message: "Choose a valid bus company and schedule." };
-  if (!CITIES.includes(origin) || !CITIES.includes(destination) || origin === destination) return { status: "error", message: "Choose two different Malawi cities." };
+  if (!origin || !destination || origin === destination) return { status: "error", message: "Choose two different Malawi districts." };
   if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(departureTime) || !weekdays.length || weekdays.some((day) => !Number.isInteger(day) || day < 0 || day > 6)) return { status: "error", message: "Choose a departure time and at least one operating day." };
   if (departureName.length < 2 || departureName.length > 100 || !Number.isInteger(seatsTotal) || seatsTotal < 1 || seatsTotal > 100 || !isDatabaseAmount(fareMWK) || (pickupFeeMWK !== null && !isDatabaseAmount(pickupFeeMWK, 0)) || !isDatabaseAmount(fareMWK + (pickupFeeMWK ?? 0))) return { status: "error", message: "Check the stage, seat count, fare and pickup fee." };
   if (!scheduleId && (model.length < 2 || model.length > 80 || !/^[A-Z0-9 -]{3,20}$/.test(plate))) return { status: "error", message: "Enter a valid bus model and number plate." };

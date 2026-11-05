@@ -1,4 +1,6 @@
 "use client";
+import { Check } from "lucide-react";
+
 
 import { useActionState, useState } from "react";
 import { saveBusDepartureAction, type BusManagementState } from "@/lib/bus-management-actions";
@@ -26,6 +28,6 @@ export default function BusDepartureForm({ trip, buses, locked, openBookings }: 
     </fieldset>
     <p className="dashboard-help dashboard-form-wide">Applies to this date only. Existing booking totals stay unchanged. Passengers see updated departure details in their bookings. Restoring a cancelled day does not reopen cancelled bookings.</p>
     {state.message && <p className={`alert dashboard-form-wide ${state.status === "error" ? "alert-error" : "alert-info"}`} role={state.status === "error" ? "alert" : "status"}>{state.message}</p>}
-    <button className="btn btn-primary" type="submit" disabled={locked || pending}>{pending ? "Applying changes…" : "Apply changes to this day"}</button>
+    <button className="btn btn-primary" type="submit" disabled={locked || pending}><Check size={16} aria-hidden="true"/>{pending ? "Applying changes…" : "Apply changes to this day"}</button>
   </form>;
 }

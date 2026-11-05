@@ -1,3 +1,6 @@
+
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import PageIntro from "@/components/PageIntro";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
@@ -72,7 +75,7 @@ async function Results({ searchParams }: { searchParams: SearchParams }) {
   };
   return (
     <>
-      <h1 className="page-title page-title--plain">{preview ? "Your transport listing previews" : company ? `${company.name} departures` : "Find transport"}</h1>
+      <PageIntro><p className="dashboard-eyebrow">TRAVEL ACROSS MALAWI</p><h1 className="page-title page-title--plain">{preview ? "Your transport listing previews" : company ? `${company.name} departures` : "Find transport"}</h1><p>Find buses, taxis and lifts between Malawi districts.</p></PageIntro>
       {preview && <p className="notice">Preview your own listings as passengers see them. Booking and contact actions are disabled. <Link href={roleHome(session?.user)}>Back to your dashboard</Link></p>}
       {filters.company && !company && <p className="notice">This bus company is unavailable.</p>}
       <div className="search-panel">
@@ -92,7 +95,7 @@ async function Results({ searchParams }: { searchParams: SearchParams }) {
 
       {sameCity && (
         <p className="notice">
-          From and To are the same city. Pick two different cities.
+          From and To are the same district. Pick two different districts.
         </p>
       )}
 
@@ -113,9 +116,9 @@ async function Results({ searchParams }: { searchParams: SearchParams }) {
       ) : null}
       {pageCount > 1 && (
         <nav className="results-pagination" aria-label="Trip result pages">
-          {results.page > 1 && <Link className="btn btn-secondary" href={pageHref(results.page - 1)}>Previous</Link>}
+          {results.page > 1 && <Link className="btn btn-secondary" href={pageHref(results.page - 1)}><ArrowLeft size={16} aria-hidden="true"/>Previous</Link>}
           <span aria-current="page">Page {results.page} of {pageCount}</span>
-          {results.page < pageCount && <Link className="btn btn-secondary" href={pageHref(results.page + 1)}>Next</Link>}
+          {results.page < pageCount && <Link className="btn btn-secondary" href={pageHref(results.page + 1)}><ArrowRight size={16} aria-hidden="true"/>Next</Link>}
         </nav>
       )}
     </>

@@ -71,7 +71,7 @@ export async function saveBusDepartureAction(_previous: BusManagementState, form
     let point = await tx.departurePoint.findFirst({ where: { operatorId: trip.operatorId, city: trip.origin, name: departureName, kind: "STATION" } });
     if (!point) point = await tx.departurePoint.create({ data: { operatorId: trip.operatorId, city: trip.origin, name: departureName, kind: "STATION" } });
     await tx.trip.update({ where: { id: trip.id }, data: { vehicleId, departureAt, departurePointId: point.id, fareMWK, seatsTotal, seatsAvailable: cancelled ? seatsTotal : seatsTotal - reserved, pickupAvailable, pickupFeeMWK, cancelled, scheduleOverride: true } });
-    return { tripId, message: cancelled ? `This day's departure is cancelled.${openBookings ? ` ${openBookings} booking(s) were cancelled; their history is retained.` : ""}` : "Changes applied to this departure only. Other days and the recurring timetable are unchanged." };
+    return { tripId, message: cancelled ? `This day's departure is cancelled.${openBookings ? ` ${openBookings} booking(s) were cancelled; their history is retained.` : ""}` : "Changes applied to this departure only. Other days and the Daily Bus Schedule are unchanged." };
   });
 }
 
@@ -87,7 +87,7 @@ export async function saveBusVehicleAction(_previous: BusManagementState, form: 
     if (model.length < 2 || model.length > 80 || !/^[A-Z0-9 -]{3,20}$/.test(plate) || !Number.isInteger(seats) || seats < 1 || seats > 100) throw new BusInputError("Enter a bus model, valid plate and capacity between 1 and 100 seats.");
     if (!vehicleId) {
       const bus = await tx.vehicle.create({ data: { operatorId, model, plate, seats } });
-      return { vehicleId: bus.id, message: "Bus added. Open Manage bus to add its recurring services." };
+      return { vehicleId: bus.id, message: "Bus added. Open Manage bus to add its Daily Bus Schedules." };
     }
     const vehicle = await tx.vehicle.findFirst({ where: { id: vehicleId, operatorId } });
     if (!vehicle) throw new BusInputError("Bus not found in this company.");
@@ -116,6 +116,6 @@ export async function setBusVehicleActiveAction(_previous: BusManagementState, f
       await tx.trip.deleteMany({ where: { vehicleId, scheduleId: { not: null }, scheduleOverride: false, departureAt: { gt: new Date() }, bookings: { none: {} } } });
     }
     await tx.vehicle.update({ where: { id: vehicleId }, data: { active } });
-    return { vehicleId, message: active ? "Bus restored to the fleet. Enable its recurring services when ready." : "Bus removed from service and its timetables paused. History is retained." };
+    return { vehicleId, message: active ? "Bus restored to the fleet. Enable its Daily Bus Schedules when ready." : "Bus removed from service and its timetables paused. History is retained." };
   });
 }

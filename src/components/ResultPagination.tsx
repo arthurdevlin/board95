@@ -1,3 +1,5 @@
+
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 export default function ResultPagination({ page, pageCount, href, label }: {
@@ -8,8 +10,8 @@ export default function ResultPagination({ page, pageCount, href, label }: {
 }) {
   if (pageCount <= 1) return null;
   return <nav className="results-pagination" aria-label={label}>
-    {page > 1 && <Link className="btn btn-secondary" prefetch={false} href={href(page - 1)}>Previous</Link>}
+    {page > 1 && <Link className="btn btn-secondary" prefetch={false} href={href(page - 1)}><ArrowLeft size={16} aria-hidden="true"/>Previous</Link>}
     <span aria-current="page">Page {page} of {pageCount}</span>
-    {page < pageCount && <Link className="btn btn-secondary" prefetch={false} href={href(page + 1)}>Next</Link>}
+    {page < pageCount && <Link className="btn btn-secondary" prefetch={false} href={href(page + 1)}><ArrowRight size={16} aria-hidden="true"/>Next</Link>}
   </nav>;
 }

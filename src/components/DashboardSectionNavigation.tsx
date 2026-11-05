@@ -1,5 +1,7 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
+import NavigationIcon from "@/components/NavigationIcon";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
@@ -11,7 +13,7 @@ export type NavigationEntry = {
 
 function NavigationList({ entries, activeHref, onNavigate }: { entries: NavigationEntry[]; activeHref: string; onNavigate: (href: string) => void }) {
   return <ul>{entries.map((entry) => <li key={`${entry.label}-${entry.href ?? "group"}`}>
-    {entry.children?.length ? <details open><summary>{entry.label}</summary><NavigationList entries={entry.children} activeHref={activeHref} onNavigate={onNavigate}/></details> : <a href={entry.href} className={activeHref === entry.href ? "is-active" : undefined} aria-current={activeHref === entry.href ? "location" : undefined} onClick={() => entry.href && onNavigate(entry.href)}>{entry.label}</a>}
+    {entry.children?.length ? <details open><summary><NavigationIcon label={entry.label}/>{entry.label}<ChevronDown className="navigation-chevron" size={14} aria-hidden="true"/></summary><NavigationList entries={entry.children} activeHref={activeHref} onNavigate={onNavigate}/></details> : <a href={entry.href} className={activeHref === entry.href ? "is-active" : undefined} aria-current={activeHref === entry.href ? "location" : undefined} onClick={() => entry.href && onNavigate(entry.href)}><NavigationIcon href={entry.href} label={entry.label}/>{entry.label}</a>}
   </li>)}</ul>;
 }
 

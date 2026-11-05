@@ -19,13 +19,14 @@ const carPhotoRemotePatterns = (() => {
 })();
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Allow development assets when testing the app on a phone over the LAN.
+  allowedDevOrigins: ["192.168.1.101"],
   experimental: {
     agentFeedback: true,
   },
   cacheComponents: true,
   partialPrefetching: true,
-  images: { remotePatterns: carPhotoRemotePatterns },
+  images: { remotePatterns: carPhotoRemotePatterns, qualities: [60, 75] },
 };
 
 export default nextConfig;

@@ -9,7 +9,7 @@ const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Board95 | Buses, taxis and car hire in Malawi",
   description:
-    "Find and book buses and shared taxis between Blantyre, Lilongwe and Mzuzu.",
+    "Find and book buses, taxis and lifts across all Malawi districts.",
 };
 
 export default function RootLayout({
@@ -24,7 +24,7 @@ export default function RootLayout({
         <Header />
         <main className="site-main flex-1 mx-auto w-full">{children}</main>
         <footer className="site-footer border-t border-black/10 text-center text-sm">
-          Board95 · Blantyre · Lilongwe · Mzuzu
+          Board95 · Travel across Malawi
         </footer>
       </body>
     </html>

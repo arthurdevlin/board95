@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef } from "react";
+import { useId, useState } from "react";
 import { TIME_ZONE } from "@/lib/dates";
 
 // Typing a date works, but most people are looking for "today" or
@@ -8,7 +8,8 @@ import { TIME_ZONE } from "@/lib/dates";
 // so no new server logic is needed — this is presentation only.
 export default function DateField({ defaultValue }: { defaultValue?: string }) {
   const id = useId();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [value, setValue] = useState(defaultValue ?? "");
+  const [quickDate, setQuickDate] = useState<"today" | "tomorrow" | "any" | null>(defaultValue ? null : "any");
 
   // Computed inside the click handler, not at render time: reading the
   // current date while the page is being prerendered is treated as an
@@ -26,35 +27,32 @@ export default function DateField({ defaultValue }: { defaultValue?: string }) {
       Number(values.month) - 1,
       Number(values.day) + days,
     ));
-    setDate([
+    setValue([
       date.getUTCFullYear(),
       String(date.getUTCMonth() + 1).padStart(2, "0"),
       String(date.getUTCDate()).padStart(2, "0"),
     ].join("-"));
-  }
-
-  function setDate(value: string) {
-    if (inputRef.current) inputRef.current.value = value;
+    setQuickDate(days === 0 ? "today" : "tomorrow");
   }
 
   return (
     <div className="field">
       <label htmlFor={id}>Date</label>
       <input
-        ref={inputRef}
         id={id}
         type="date"
         name="date"
-        defaultValue={defaultValue ?? ""}
+        value={value}
+        onChange={(event) => { setValue(event.target.value); setQuickDate(event.target.value ? null : "any"); }}
       />
       <div className="chip-group" role="group" aria-label="Quick date options">
-        <button type="button" className="chip" onClick={() => setOffsetDate(0)}>
+        <button type="button" className="chip" aria-pressed={quickDate === "today"} onClick={() => setOffsetDate(0)}>
           Today
         </button>
-        <button type="button" className="chip" onClick={() => setOffsetDate(1)}>
+        <button type="button" className="chip" aria-pressed={quickDate === "tomorrow"} onClick={() => setOffsetDate(1)}>
           Tomorrow
         </button>
-        <button type="button" className="chip" onClick={() => setDate("")}>
+        <button type="button" className="chip" aria-pressed={quickDate === "any"} onClick={() => { setValue(""); setQuickDate("any"); }}>
           Any date
         </button>
       </div>

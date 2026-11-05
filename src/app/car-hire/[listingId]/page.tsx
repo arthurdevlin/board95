@@ -1,3 +1,4 @@
+import { ArrowLeft, CarFront } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -31,10 +32,10 @@ async function CarHireProfile({ params }: { params: Promise<{ listingId: string 
   if (!listing) notFound();
 
   return <section className="car-profile-page">
-    <Link href="/car-hire" className="car-profile-back">← Back to car hire</Link>
+    <Link href="/car-hire" className="car-profile-back"><ArrowLeft size={16} aria-hidden="true"/>Back to car hire</Link>
     <article className="panel car-profile-card">
       <div className="car-profile-photo">
-        {listing.photoUrl ? <Image src={listing.photoUrl} alt={`${listing.model} for hire`} fill sizes="(max-width: 760px) 100vw, 56rem" preload /> : <div className="car-photo-placeholder" role="img" aria-label="No vehicle photo has been added"><svg aria-hidden="true" viewBox="0 0 72 48" fill="none"><path d="m12 30 5-13c1-3 3-5 7-5h24c3 0 5 2 7 5l5 13v9h-6a6 6 0 0 1-12 0H30a6 6 0 0 1-12 0h-6v-9Z" stroke="currentColor" strokeWidth="3" strokeLinejoin="round"/><path d="M20 26h32M24 12l4 14m20-14-4 14" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/></svg><span>Photo coming soon</span></div>}
+        {listing.photoUrl ? <Image src={listing.photoUrl} alt={`${listing.model} for hire`} fill sizes="(max-width: 760px) 100vw, 56rem" preload /> : <div className="car-photo-placeholder" role="img" aria-label="No vehicle photo has been added"><CarFront size={60} strokeWidth={1.3} aria-hidden="true"/><span>Photo coming soon</span></div>}
       </div>
       <div className="car-profile-content">
         <div className="hire-card-top"><div><p className="dashboard-eyebrow">{carHireDistrictName(listing.district)} · {vehicleTypeLabels[listing.vehicleType]}{listing.vehicleType === "LORRY" && listing.lorryCapacityTons ? ` · ${listing.lorryCapacityTons} ton${listing.lorryCapacityTons === 1 ? "" : "s"}` : ""}</p><h1>{listing.name}</h1></div><span className={`status-badge ${listing.available ? "status-accepted" : "status-pending"}`}>{listing.available ? "Available" : "Unlisted"}</span></div>

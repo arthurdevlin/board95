@@ -1,15 +1,20 @@
+import PageIntro from "@/components/PageIntro";
+
+import { transportLocationName } from "@/lib/cities";
 import { withTripHistory, withListingHistory } from "@/lib/listing-lifecycle";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { archiveBookingHistoryAction, cancelCarHireRequestAction, cancelPassengerBookingAction, submitAccountApplicationAction } from "@/lib/actions";
-import { ArrowUpRight, CarFront, Plus, LayoutDashboard, CalendarDays, Search, Ticket, Settings, Users, ClipboardCheck, BusFront } from "lucide-react";
+import { ArrowUpRight, BusFront, CalendarDays, CarFront, Check, ClipboardCheck, LayoutDashboard, MessageCircle, Plus, Search, Send, Settings, Ticket, Users, X } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { formatMWK, formatTimestamp, formatShortDate } from "@/lib/format";
 import Link from "next/link";
 import { operatorWorkspace } from "@/lib/operator-workspace";
+import BookingReference from "@/components/BookingReference";
 import { canApplyForOperator, canBrowseListings } from "@/lib/access";
 import BusCompanyDepartures from "@/components/BusCompanyDepartures";
 import DepartingSoon from "@/components/DepartingSoon";
+import TravelHome from "@/components/TravelHome";
 
 export const metadata = { title: "Your home | Board95" };
 
@@ -42,6 +47,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   ]);
   const operatorId = operators.find((operator) => operator.active && operator.verified)?.id ?? memberships.find((member) => member.role === "ADMIN" && member.operator.verified)?.operatorId;
   const isOperator = role === "OWNER" || session.user.isBusMember;
+  const isPassenger = role === "CUSTOMER" && !isOperator;
   const workspace = operatorWorkspace(operators.map((operator) => operator.kind), memberships.length > 0);
   const roleLabel = role === "CAR_HIRER" ? "Car-hire workspace" : role === "ADMIN" ? "Administrator workspace" : isOperator ? workspace.workspace : "Your travel companion";
   const introduction = role === "CAR_HIRER" ? "Give your next customer a great journey. List a vehicle, review requests and keep your fleet up to date." : role === "ADMIN" ? "Keep Board95 moving. Review requests, support your providers and manage the community." : isOperator ? workspace.description : "Where are you heading next? Find a trip, hire a car or pick up where you left off.";
@@ -57,7 +63,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
     { title: "Review bookings", description: "Keep passenger requests moving.", href: "/admin#pending-bookings", icon: Ticket },
   ] : isOperator ? [
     { title: workspace.title, description: `Manage your ${workspace.name.toLowerCase()} workspace.`, href: "/operator", icon: LayoutDashboard, featured: true },
-    ...(operatorId ? [{ title: workspace.busOnly ? "Add a recurring bus" : "Post a departure", description: workspace.busOnly ? "Save the bus timetable, stage and fare once." : "Add your next trip and seat fare.", href: `/operator#operator-add-trip-${operatorId}`, icon: Plus }] : []),
+    ...(operatorId ? [{ title: workspace.busOnly ? "Add Daily Bus Schedule" : "Post a departure", description: workspace.busOnly ? "Save the bus timetable, stage and fare once." : "Add your next trip and seat fare.", href: `/operator#operator-add-trip-${operatorId}`, icon: Plus }] : []),
     { title: "Passenger requests", description: "Review bookings and confirm seats.", href: "/operator#operator-bookings", icon: Ticket },
     { title: "Trip schedule", description: `See upcoming ${workspace.trips.toLowerCase()} and ${workspace.vehicles.toLowerCase()}.`, href: "/operator#operator-trips", icon: workspace.busOnly ? BusFront : CarFront },
   ] : [
@@ -68,34 +74,36 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   ];
 
   return (
-    <section className="account-home">
-      <div className="account-welcome">
+    <section className={`account-home${isPassenger ? " passenger-home" : ""}`}>
+      {isPassenger ? <TravelHome name={session.user.name.split(" ")[0]}/> : <>
+      <PageIntro className="dashboard-intro account-welcome">
         <div><p className="dashboard-eyebrow">{roleLabel}</p><h1>Welcome back, {session.user.name.split(" ")[0]}<span className="welcome-dot">.</span></h1><p className="account-welcome-copy">{introduction}</p><Link href="/settings" className="account-profile-link"><Settings size={14} aria-hidden="true"/>Your profile & preferences<ArrowUpRight size={14} aria-hidden="true"/></Link></div>
         {role === "CAR_HIRER" && <div className="account-fleet-summary"><span className="account-summary-icon"><CarFront size={26} aria-hidden="true"/></span><div><strong>{fleet}</strong><span>{fleet === 1 ? "vehicle in your fleet" : "vehicles in your fleet"}</span></div><Link href="/car-hire/dashboard#rental-requests"><span className="request-dot"/>{pendingRentals ? `${pendingRentals} pending rental ${pendingRentals === 1 ? "request" : "requests"}` : "No requests waiting"}<ArrowUpRight size={14} aria-hidden="true"/></Link></div>}
-      </div>
+      </PageIntro>
 
       <div className="account-section-heading"><h2>What would you like to do?</h2><span>Your shortcuts</span></div>
       <div className="account-quick-actions">{quickActions.map(({ title, description, href, icon: Icon, ...action }) => <Link key={title} href={href} className={`account-action${"featured" in action && action.featured ? " is-featured" : ""}`}><span className="account-action-icon"><Icon size={23} strokeWidth={1.8} aria-hidden="true"/></span><ArrowUpRight className="account-action-arrow" size={18} aria-hidden="true"/><strong>{title}</strong><span className="account-action-description">{description}</span></Link>)}</div>
 
       {canBrowseListings(session.user) && <><BusCompanyDepartures/><DepartingSoon/></>}
+      </>}
 
-      {carHireRequests.length > 0 && <div className="panel dashboard-panel"><h2>My car-hire requests</h2><div className="dashboard-list">{carHireRequests.map((request) => <article className="dashboard-list-item" key={request.id}><div><strong>{request.listing.name}</strong><span>{formatShortDate(request.startsAt)} to {formatShortDate(request.endsAt)} · {formatMWK(request.totalMWK)}</span><span>Reference: {request.id.slice(-8).toUpperCase()}</span></div><div className="dashboard-actions"><span className={`status-badge status-${request.status.toLowerCase()}`}>{request.status}</span>{request.reviewedByAdmin && <small className="admin-action-note">by administrator</small>}{["PENDING", "ACCEPTED"].includes(request.status) && request.startsAt > new Date() && <form action={cancelCarHireRequestAction}><input type="hidden" name="requestId" value={request.id}/><button className="btn btn-danger" type="submit">Cancel</button></form>}</div></article>)}</div></div>}
+      {carHireRequests.length > 0 && <div className="panel dashboard-panel"><h2>My car-hire requests</h2><div className="dashboard-list">{carHireRequests.map((request) => <article className="dashboard-list-item" key={request.id}><div><strong>{request.listing.name}</strong><span>{formatShortDate(request.startsAt)} to {formatShortDate(request.endsAt)} · {formatMWK(request.totalMWK)}</span><BookingReference reference={request.id.slice(-8).toUpperCase()}/></div><div className="dashboard-actions"><span className={`status-badge status-${request.status.toLowerCase()}`}>{request.status}</span>{request.reviewedByAdmin && <small className="admin-action-note">by administrator</small>}{["PENDING", "ACCEPTED"].includes(request.status) && request.startsAt > new Date() && <form action={cancelCarHireRequestAction}><input type="hidden" name="requestId" value={request.id}/><button className="btn btn-danger" type="submit"><X size={16} aria-hidden="true"/>Cancel</button></form>}</div></article>)}</div></div>}
 
       {application === "retry" && <p className="alert alert-error" role="alert">Your account was created, but the provider application could not be completed. Review the form below and try again.</p>}
 
 
-      {canApplyForOperator(session.user) && !hasActiveApplication && <div className="panel dashboard-panel"><h2>Apply for an operator account</h2><p className="dashboard-help">The Board95 admin team reviews applications before publishing operator or vehicle listings.</p><form action={submitAccountApplicationAction} className="dashboard-form"><label className="field"><span>Account type</span><select name="kind" required defaultValue=""><option value="" disabled>Select an account type</option><option value="TAXI_OWNER">Taxi owner</option><option value="CAR_HIRER">Car-hire owner</option></select></label><label className="field"><span>Business / operator name</span><input name="displayName" required minLength={2} maxLength={100}/></label><label className="field"><span>Malawi mobile number</span><input name="phone" type="tel" inputMode="tel" placeholder="0991 234 567" required pattern="(?:[+]265[ ]?(?:8|9|2)[0-9]{2}[ ]?[0-9]{3}[ ]?[0-9]{3}|0(?:8|9|2)[0-9]{2}[ ]?[0-9]{3}[ ]?[0-9]{3})"/></label><button className="btn btn-primary" type="submit">Send application</button></form></div>}
+      {canApplyForOperator(session.user) && !hasActiveApplication && <div className="panel dashboard-panel"><h2>Apply for an operator account</h2><p className="dashboard-help">The Board95 admin team reviews applications before publishing operator or vehicle listings.</p><form action={submitAccountApplicationAction} className="dashboard-form"><label className="field"><span>Account type</span><select name="kind" required defaultValue=""><option value="" disabled>Select an account type</option><option value="TAXI_OWNER">Taxi owner</option><option value="CAR_HIRER">Car-hire owner</option></select></label><label className="field"><span>Business / operator name</span><input name="displayName" required minLength={2} maxLength={100}/></label><label className="field"><span>Malawi mobile number</span><input name="phone" type="tel" inputMode="tel" placeholder="0991 234 567" required pattern="(?:[+]265[ ]?(?:8|9|2)[0-9]{2}[ ]?[0-9]{3}[ ]?[0-9]{3}|0(?:8|9|2)[0-9]{2}[ ]?[0-9]{3}[ ]?[0-9]{3})"/></label><button className="btn btn-primary" type="submit"><Send size={16} aria-hidden="true"/>Send application</button></form></div>}
 
       {applications.length > 0 && <details className="panel account-application-history" open={applications.some((item) => item.status === "PENDING")}><summary>Account applications <span>{applications.length}</span></summary><div className="dashboard-list">{applications.map((application) => <article className="dashboard-list-item" key={application.id}><div><strong>{application.displayName}</strong><span>{application.kind.replace("_", " ")} · Submitted {formatShortDate(application.createdAt)}</span></div><span className={`status-badge status-${application.status.toLowerCase()}`}>{application.status}</span>{application.reviewedByAdmin && <small className="admin-action-note">by administrator</small>}</article>)}</div></details>}
 
       {((role === "CUSTOMER" && !isOperator) || bookings.length > 0) && <div className="panel">
-        <div className="passenger-dashboard-heading"><div><h2 id="my-bookings">My bookings</h2><p className="dashboard-help">Check status, message your operator and keep your history tidy.</p></div>{session.user.role === "CUSTOMER" && bookings.some((booking) => ["DECLINED", "CANCELLED", "COMPLETED"].includes(booking.status)) && <form action={archiveBookingHistoryAction}><button type="submit" className="btn btn-secondary">Clear completed history</button></form>}</div>
+        <div className="passenger-dashboard-heading"><div><h2 id="my-bookings">My bookings</h2><p className="dashboard-help">Check status, message your operator and keep your history tidy.</p></div>{session.user.role === "CUSTOMER" && bookings.some((booking) => ["DECLINED", "CANCELLED", "COMPLETED"].includes(booking.status)) && <form action={archiveBookingHistoryAction}><button type="submit" className="btn btn-secondary"><Check size={16} aria-hidden="true"/>Clear completed history</button></form>}</div>
         {bookings.length === 0 ? <p className="field-hint mt-3">Your bookings will appear here. Guest bookings made while signed in are saved automatically.</p> : (
           <div className="account-bookings">
             {bookings.map((booking) => (
               <article className="account-booking" key={booking.id}>
                 <div className="booking-heading">
-                  <h3>{booking.trip.origin} to {booking.trip.destination}</h3>
+                  <h3>{transportLocationName(booking.trip.origin)} to {transportLocationName(booking.trip.destination)}</h3>
                   <span className={`status-badge status-${booking.status.toLowerCase()}`}>{booking.status}</span>{booking.reviewedByAdmin && <small className="admin-action-note">by administrator</small>}
                 </div>
                 <dl className="kv">
@@ -106,8 +114,8 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
                   <div><dt>Pickup</dt><dd>{booking.pickupRequested ? booking.pickupLocation ?? "Requested" : "Not requested"}</dd></div>
                   <div><dt>Total</dt><dd>{formatMWK(booking.totalMWK)}</dd></div>
                 </dl>
-                <p className="booking-reference">Reference: <strong>{booking.id.slice(-8).toUpperCase()}</strong></p>
-                <div className="dashboard-actions booking-account-actions"><Link className="btn btn-secondary booking-chat-link" href={`/bookings/${booking.id}/chat`}>Chat with provider</Link>{session.user.role === "CUSTOMER" && ["PENDING", "ACCEPTED"].includes(booking.status) && booking.trip.departureAt > new Date() && <form action={cancelPassengerBookingAction}><input type="hidden" name="bookingId" value={booking.id}/><button className="btn btn-danger" type="submit">Cancel booking</button></form>}</div>
+                <BookingReference reference={booking.id.slice(-8).toUpperCase()}/>
+                <div className="dashboard-actions booking-account-actions"><Link className="btn btn-secondary booking-chat-link" href={`/bookings/${booking.id}/chat`}><MessageCircle size={16} aria-hidden="true"/>Chat with provider</Link>{session.user.role === "CUSTOMER" && ["PENDING", "ACCEPTED"].includes(booking.status) && booking.trip.departureAt > new Date() && <form action={cancelPassengerBookingAction}><input type="hidden" name="bookingId" value={booking.id}/><button className="btn btn-danger" type="submit"><X size={16} aria-hidden="true"/>Cancel booking</button></form>}</div>
               </article>
             ))}
           </div>

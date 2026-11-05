@@ -1,4 +1,6 @@
 "use client";
+import { Plus } from "lucide-react";
+
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -43,6 +45,6 @@ export default function AdminCreateUserForm({ action, role = "CUSTOMER" }: { act
     <label className="field"><span>Mobile number <em>(optional)</em></span><input name="phone" type="tel" autoComplete="tel" placeholder="0991 234 567"/></label>
     <PasswordFields label="Initial password" disabled={pending}/>
     {error && <p className="alert alert-error" role="alert">{error}</p>}
-    <button className="btn btn-primary" type="submit" disabled={pending}>{pending ? "Creating account…" : role === "ADMIN" ? "Create administrator" : "Create passenger account"}</button>
+    <button className="btn btn-primary" type="submit" disabled={pending}><Plus size={16} aria-hidden="true"/>{pending ? "Creating account…" : role === "ADMIN" ? "Create administrator" : "Create passenger account"}</button>
   </form>;
 }

@@ -1,4 +1,6 @@
 "use client";
+import { RefreshCw } from "lucide-react";
+
 
 // Shown when something throws while rendering a page, for example when the
 // database can't be reached. Error boundaries must be Client Components.
@@ -12,7 +14,7 @@ export default function Error({ reset }: { error: Error; reset: () => void }) {
       <button
         onClick={reset}
         className="btn btn-primary mt-4"
-      >
+      ><RefreshCw size={16} aria-hidden="true"/>
         Try again
       </button>
     </div>

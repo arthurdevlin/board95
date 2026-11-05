@@ -1,4 +1,6 @@
 "use client";
+import { KeyRound, Send } from "lucide-react";
+
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
@@ -44,7 +46,7 @@ export function RequestPasswordResetForm() {
       </label>
       {error && <p className="alert alert-error" role="alert">{error}</p>}
       {message && <p className="alert" role="status">{message}</p>}
-      <button className="btn btn-primary" disabled={pending}>
+      <button className="btn btn-primary" disabled={pending}><Send size={16} aria-hidden="true"/>
         {pending ? "Sending…" : "Email reset link"}
       </button>
     </form>
@@ -99,7 +101,7 @@ export function ResetPasswordForm() {
       </label>
       {error && <p className="alert alert-error" role="alert">{error}</p>}
       {message && <p className="alert" role="status">{message} <Link href="/sign-in">Sign in</Link></p>}
-      <button className="btn btn-primary" disabled={pending}>
+      <button className="btn btn-primary" disabled={pending}><KeyRound size={16} aria-hidden="true"/>
         {pending ? "Saving…" : "Set new password"}
       </button>
     </form>

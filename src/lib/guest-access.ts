@@ -12,7 +12,15 @@ export function matchesGuestToken(token: string, expectedHash: string | null) {
 }
 
 export function normalizeMalawiPhone(input: string) {
-  const phone = input.replace(/[\s()-]/g, "");
-  if (!/^(?:\+265|0)(?:8|9|2)\d{8}$/.test(phone)) return null;
-  return phone.startsWith("+") ? phone : `+265${phone.slice(1)}`;
+  if (input.length > 64) return null;
+  const phone = input.replace(/[\s().-]/g, "");
+  // Accept local, bare national and international forms, including a redundant
+  // trunk zero after the country code. Always store and compare one format.
+  const match = /^(?:(?:\+|00)?265)?0?([289]\d{8})$/.exec(phone);
+  return match ? `+265${match[1]}` : null;
+}
+
+export function normalizeBookingReference(input: string) {
+  const reference = input.replace(/\s/g, "").toLowerCase();
+  return /^[a-z0-9]{8}$/.test(reference) ? reference : null;
 }

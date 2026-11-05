@@ -1,3 +1,4 @@
+import { transportLocationName } from "@/lib/cities";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { listingHistoryScope } from "@/lib/listing-history";
@@ -26,7 +27,7 @@ export async function GET(request: Request) {
       if (kind === "trip") {
         const rows = await prisma.tripHistory.findMany({ where: { ...scope.trips, departureAt: dates }, ...pagination });
         if (!header) controller.enqueue(encoder.encode("\uFEFF" + csvRow(["ID", "Operator", "Type", "Origin", "Destination", "Departure UTC", "Published UTC", "Archived UTC", "Vehicle", "Plate", "Departure point", "Fare MWK", "Seats total", "Seats available", "Pickup available", "Pickup fee MWK"])));
-        for (const row of rows) controller.enqueue(encoder.encode(csvRow([row.id, row.operatorName, row.type, row.origin, row.destination, row.departureAt, row.createdAt, row.archivedAt, row.vehicleModel, row.vehiclePlate, row.departurePointName, row.fareMWK, row.seatsTotal, row.seatsAvailable, row.pickupAvailable, row.pickupFeeMWK])));
+        for (const row of rows) controller.enqueue(encoder.encode(csvRow([row.id, row.operatorName, row.type, transportLocationName(row.origin), transportLocationName(row.destination), row.departureAt, row.createdAt, row.archivedAt, row.vehicleModel, row.vehiclePlate, row.departurePointName, row.fareMWK, row.seatsTotal, row.seatsAvailable, row.pickupAvailable, row.pickupFeeMWK])));
         cursor = rows.at(-1)?.id;
         if (rows.length < 250) controller.close();
       } else {

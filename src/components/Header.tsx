@@ -57,7 +57,7 @@ async function HeaderMenu() {
         { label: `${operator.kind === "BUS_COMPANY" ? "Bus" : "Taxi"} summary`, href: `/operator#operator-profile-${operator.id}` },
         { label: "Trip schedule", href: `/operator#operator-trips-${operator.id}` },
         { label: operator.kind === "BUS_COMPANY" ? "Buses" : "Taxis", href: `/operator#operator-vehicles-${operator.id}` },
-        ...(operator.active && operator.verified ? [{ label: operator.kind === "BUS_COMPANY" ? "Add a recurring bus" : "Add a departure", href: `/operator#operator-add-trip-${operator.id}` }] : []),
+        ...(operator.active && operator.verified ? [{ label: operator.kind === "BUS_COMPANY" ? "Add Daily Bus Schedule" : "Add a departure", href: `/operator#operator-add-trip-${operator.id}` }] : []),
       ] })) },
       { label: "Bookings", children: [
         { label: "Pending requests", href: "/operator#operator-bookings" },
@@ -88,7 +88,7 @@ async function HeaderMenu() {
           { label: "Bus summary", href: `/operator#operator-profile-${membership.operatorId}` },
           { label: "Trip schedule", href: `/operator#operator-trips-${membership.operatorId}` },
           { label: "Buses", href: `/operator#operator-vehicles-${membership.operatorId}` },
-          ...(membership.role === "ADMIN" && membership.operator.active && membership.operator.verified ? [{ label: "Add a recurring bus", href: `/operator#operator-add-trip-${membership.operatorId}` }] : []),
+          ...(membership.role === "ADMIN" && membership.operator.active && membership.operator.verified ? [{ label: "Add Daily Bus Schedule", href: `/operator#operator-add-trip-${membership.operatorId}` }] : []),
         ] })) },
         { label: "Bookings", children: [
           { label: "Pending requests", href: "/operator#operator-bookings" },

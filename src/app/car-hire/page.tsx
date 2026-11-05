@@ -3,13 +3,16 @@ import { connection } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { formatMWK } from "@/lib/format";
 import Link from "next/link";
-import { ArrowUpRight, MessageCircle, Phone } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, MessageCircle, Phone } from "lucide-react";
 import CarHireSearch from "@/components/CarHireSearch";
 import { CAR_HIRE_DISTRICTS, carHireDistrictName, type CarHireDistrictCode } from "@/lib/car-hire-districts";
 import { parsePageParam, readPage } from "@/lib/pagination";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { canBrowseListings, roleHome } from "@/lib/access";
+import { MapPin } from "lucide-react";
+import CarHirePhoto from "@/components/CarHirePhoto";
+import CarHireCarousel from "@/components/CarHireCarousel";
 
 export const metadata = { title: "Car hire | Board95" };
 
@@ -60,7 +63,7 @@ async function CarHireListings({ searchParams }: { searchParams: SearchParams })
     () => prisma.carHireListing.count({ where }),
     (skip, take) => prisma.carHireListing.findMany({
     where,
-    select: { id: true, name: true, model: true, vehicleType: true, lorryCapacityTons: true, contactPhone: true, district: true, dailyRateMWK: true, available: true },
+    select: { id: true, name: true, model: true, vehicleType: true, lorryCapacityTons: true, contactPhone: true, district: true, dailyRateMWK: true, available: true, photoUrl: true },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     skip, take,
   }));
@@ -74,20 +77,33 @@ async function CarHireListings({ searchParams }: { searchParams: SearchParams })
   };
 
   return <>
-    <div className="dashboard-intro"><p className="dashboard-eyebrow">SELF-DRIVE RENTALS</p><h1 className="page-title page-title--plain">{preview ? "Your car-hire listing previews" : "Car hire in Malawi"}</h1><p>{preview ? "Preview your own vehicles. Rental requests and contact actions are disabled." : "Browse vehicles available from local car-hire owners."}</p>{preview && <Link href={roleHome(session?.user)}>Back to your dashboard</Link>}</div>
-    <CarHireSearch type={selectedType} district={selectedDistrict} query={query}/>
+    <div className={`hire-hero${listings.length ? " has-previews" : ""}`}>
+      <span className="hero-watermark" aria-hidden="true">95</span>
+      <div className="dashboard-intro hire-intro"><p className="dashboard-eyebrow">BOARD95 / {preview ? "YOUR VEHICLES" : "CAR HIRE"}</p><h1 className="page-title page-title--plain">{preview ? "Your car-hire listing previews" : "Find your next car"}</h1><p>{preview ? "Preview your own vehicles. Rental requests and contact actions are disabled." : "Compare cars and daily rates across Malawi."}</p>{!preview && <span className="hire-hero-footnote">Choose a car. Contact the owner. Plan your day.</span>}{preview && <Link href={roleHome(session?.user)}>Back to your dashboard</Link>}</div>
+      <CarHireCarousel key={listings.map(({ id }) => id).join(",")} cars={listings.slice(0, 6).map((listing) => ({ id: listing.id, name: listing.name, model: listing.model, photoUrl: listing.photoUrl, dailyRateMWK: listing.dailyRateMWK, district: carHireDistrictName(listing.district), type: typeLabels[listing.vehicleType] }))}/>
+    </div>
+    <CarHireSearch key={JSON.stringify([selectedType, selectedDistrict, query])} type={selectedType} district={selectedDistrict} query={query} showPostOption={!preview}/>
+    <div className="hire-browse-heading"><h2>{preview ? "Your vehicle previews" : "Available to hire"}</h2><span>{total} {total === 1 ? "vehicle" : "vehicles"} · Rates per day</span></div>
     {!total ? <div className="empty-state">No vehicles match your search. Try another type, district or search term.</div> : <div className="hire-results">
-      <div className="results-bar"><p>{total} {total === 1 ? "vehicle" : "vehicles"} available</p></div>
-      <div className="hire-listings">{listings.map((listing) => <article className="panel hire-card" key={listing.id}>
-        <div className="hire-card-top"><div><p className="dashboard-eyebrow">{carHireDistrictName(listing.district)} · {typeLabels[listing.vehicleType]}{listing.vehicleType === "LORRY" && listing.lorryCapacityTons ? ` · ${listing.lorryCapacityTons} ton${listing.lorryCapacityTons === 1 ? "" : "s"}` : ""}</p><h2>{listing.name}</h2></div><span className={`status-badge ${listing.available ? "status-accepted" : "status-pending"}`}>{listing.available ? "Available" : "Unlisted"}</span></div>
-        <p className="hire-model">{listing.model}</p>
-        <div className="hire-card-bottom"><strong>{formatMWK(listing.dailyRateMWK)} <span>/ day</span></strong><Link className="btn btn-primary hire-card-action" href={`/car-hire/${listing.id}`}>View car <ArrowUpRight size={16} aria-hidden="true"/></Link></div>
-        {listing.contactPhone && !preview && <div className="hire-contact-links"><a href={`tel:${listing.contactPhone}`} aria-label={`Call ${displayPhone(listing.contactPhone)}`}><Phone size={15} aria-hidden="true"/>{displayPhone(listing.contactPhone)}</a><a href={`https://wa.me/${listing.contactPhone.replace(/\D/g, "")}`} target="_blank" rel="noreferrer"><MessageCircle size={16} aria-hidden="true"/>WhatsApp</a></div>}
+      <div className="hire-listings">{listings.map((listing, index) => <article className="panel hire-card" key={listing.id}>
+        <Link href={`/car-hire/${listing.id}`} className="hire-card-photo" aria-label={`View ${listing.name}`}>
+          <CarHirePhoto src={listing.photoUrl} model={listing.model} type={typeLabels[listing.vehicleType]} loading={index < 2 ? "eager" : "lazy"}/>
+        </Link>
+        <div className="hire-card-content">
+        <div className="hire-card-meta"><span>{typeLabels[listing.vehicleType]}{listing.vehicleType === "LORRY" && listing.lorryCapacityTons ? ` · ${listing.lorryCapacityTons}t` : ""}</span><span className={`hire-card-availability${listing.available ? "" : " is-unlisted"}`}>{listing.available ? "Available" : "Unlisted"}</span></div>
+        <h2><Link href={`/car-hire/${listing.id}`}>{listing.name}</Link></h2>
+        <p className="hire-model" title={listing.model}>{listing.model}</p>
+        <p className="hire-card-location"><MapPin size={13} aria-hidden="true"/>{carHireDistrictName(listing.district)}</p>
+        <p className="hire-card-rate"><strong>{formatMWK(listing.dailyRateMWK)}</strong><span>/ day</span></p>
+        </div>
+        <div className="hire-card-footer"><Link className="btn btn-primary hire-card-action" href={`/car-hire/${listing.id}`}>View car <ArrowUpRight size={16} aria-hidden="true"/></Link>
+        {listing.contactPhone && !preview && <div className="hire-contact-links"><a href={`tel:${listing.contactPhone}`} aria-label={`Call ${displayPhone(listing.contactPhone)}`}><Phone size={15} aria-hidden="true"/><span className="hire-contact-text">Call</span></a><a href={`https://wa.me/${listing.contactPhone.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" aria-label={`Contact ${listing.name} on WhatsApp`}><MessageCircle size={16} aria-hidden="true"/><span className="hire-contact-text">WhatsApp</span></a></div>}
+        </div>
       </article>)}</div>
       {pageCount > 1 && <nav className="results-pagination" aria-label="Car hire listing pages">
-        {page > 1 ? <Link className="btn btn-secondary" href={pageHref(page - 1)}>Previous</Link> : <span aria-disabled="true">Previous</span>}
+        {page > 1 ? <Link className="btn btn-secondary" href={pageHref(page - 1)}><ArrowLeft size={16} aria-hidden="true"/>Previous</Link> : <span aria-disabled="true">Previous</span>}
         <span aria-current="page">Page {page} of {pageCount}</span>
-        {page < pageCount ? <Link className="btn btn-secondary" href={pageHref(page + 1)}>Next</Link> : <span aria-disabled="true">Next</span>}
+        {page < pageCount ? <Link className="btn btn-secondary" href={pageHref(page + 1)}><ArrowRight size={16} aria-hidden="true"/>Next</Link> : <span aria-disabled="true">Next</span>}
       </nav>}
     </div>}
   </>;

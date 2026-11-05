@@ -50,5 +50,13 @@ it("preserves daily inventory, booked fares and persistent timetables in Postgre
     assert.deepEqual((await db.query('SELECT "scheduleId", "serviceDate" FROM "TripHistory"')).rows[0], { scheduleId: "daily-service", serviceDate: "2090-01-01" });
     assert.equal((await db.query('SELECT "tripHistoryId" FROM "Booking"')).rows[0].tripHistoryId, "day-one");
     assert.equal((await db.query('SELECT active FROM "BusSchedule"')).rows[0].active, true);
+    // Every new district must be usable in stored routes and departure points.
+    const { CITIES } = await import("../src/lib/cities.ts");
+    for (const location of CITIES) {
+      await db.query('INSERT INTO "DeparturePoint" (id, city, name, kind) VALUES ($1, $2, $3, $4)', ['point-' + location, location, location + ' station', 'STATION']);
+      await db.query('INSERT INTO "Trip" (id, "operatorId", "vehicleId", "departurePointId", type, origin, destination, "departureAt", "fareMWK", "seatsTotal", "seatsAvailable") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)', ['trip-' + location, 'bus-company', 'bus', 'point-' + location, 'BUS', location, location === 'Lilongwe' ? 'Blantyre' : 'Lilongwe', '2091-01-01T08:00:00Z', 5000, 4, 4]);
+    }
+    assert.equal((await db.query('SELECT COUNT(*)::integer AS total FROM "Trip" WHERE id LIKE $1', ['trip-%'])).rows[0].total, 29);
+    assert.equal((await db.query('SELECT origin FROM "TripHistory" WHERE id = $1', ['day-one'])).rows[0].origin, 'Blantyre');
   } finally { await db.close(); }
 });

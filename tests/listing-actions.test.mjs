@@ -11,6 +11,18 @@ const mocks = {
   "@/lib/session": "export async function getSession() { return globalThis.board95ActionTest.session; }",
   "@/lib/prisma": `export const prisma = new Proxy({}, { get(_target, key) {
     const state = globalThis.board95ActionTest;
+    if (state.publishQueries) {
+      const operator = { async findFirst() { return { id: 'district-operator', kind: 'TAXI_OWNER' }; } };
+      const tx = { operator,
+        vehicle: { async findUnique() { return { id: 'district-vehicle', operatorId: 'district-operator', model: 'Test vehicle', seats: 4, active: true }; } },
+        departurePoint: { async findFirst() { return null; }, async create(query) { state.publishQueries.push({ kind: 'point', ...query }); return { id: 'district-stage' }; } },
+        trip: { async findFirst() { return null; }, async create(query) { state.publishQueries.push({ kind: 'trip', ...query }); return { id: 'district-trip' }; } },
+        busSchedule: { async findFirst() { return null; }, async create(query) { state.publishQueries.push({ kind: 'schedule', ...query }); return { id: 'district-schedule' }; } },
+      };
+      if (key === 'operator') return operator;
+      if (key === '$transaction') return async (callback) => callback(tx);
+    }
+
     if (key === 'carHireListing' && state.renewQueries) return {
       async updateMany(query) { state.renewQueries.push(query); return { count: state.renewCount ?? 1 }; },
     };
@@ -20,10 +32,14 @@ const mocks = {
     };
     if (key === 'operator' && state.companyQueries) return { async findMany(query) { state.companyQueries.push(query); return [{ id: 'company-with-no-trips', name: 'Registered company' }]; } };
     if (key === '$transaction' && state.bookingTrip) return async (callback) => callback({ trip: { async findUnique() { return state.bookingTrip; } } });
+    if (key === 'booking' && state.lookupQueries) return {
+      async findFirst(query) { state.lookupQueries.push(query); return state.lookupResult ?? null; },
+      async update(query) { (state.lookupUpdates ??= []).push(query); return { id: query.where.id }; },
+    };
     state.sideEffects++; throw new Error('Unexpected database access');
   } });`,
   "next/cache": "export function revalidatePath() {} export function updateTag() {} export function cacheLife() {} export function cacheTag() {}",
-  "next/navigation": "export function redirect() { throw new Error('Unexpected redirect'); }",
+  "next/navigation": "export function redirect(destination) { throw Object.assign(new Error('Test redirect'), { destination }); }",
   "better-auth/crypto": "export async function hashPassword() { throw new Error('Unexpected password hashing'); }",
   "@/lib/email": "export function board95Url() {} export function deliverEmailDelivery() {} export function sendBoard95Email() {}",
   "@/lib/rate-limit": "export async function allowRequest() { return globalThis.board95ActionTest.allowRequests ?? false; }",
@@ -42,12 +58,53 @@ registerHooks({
     return nextLoad(url, context);
   },
 });
-const { requestSeatAction, requestCarHireAction, submitAccountApplicationAction, applyForAccountTypeFromSignup, setUserPasswordAction, renewCarHireListingAction } = await import(actionsUrl);
+const { createOperatorTripAction, requestSeatAction, requestCarHireAction, submitAccountApplicationAction, applyForAccountTypeFromSignup, setUserPasswordAction, renewCarHireListingAction, lookupGuestBookingAction } = await import(actionsUrl);
 const { parseFilters, searchTrips, getRegisteredBusCompanies, getUpcomingTrips } = await import("../src/lib/trips.ts");
 
 beforeEach(() => { globalThis.board95ActionTest = { session: null, sideEffects: 0 }; });
 
+describe("guest booking lookup", () => {
+  for (const phone of ["0993661661", "993661661", "265993661661", "+265 993 661 661", "+265 (0) 993-661-661"]) {
+    it(`looks up mixed-case references with phone ${phone}`, async () => {
+      const state = globalThis.board95ActionTest;
+      state.allowRequests = true;
+      state.lookupQueries = [];
+      state.lookupResult = { id: "guest-booking-abc123xy" };
+      const form = new FormData(); form.set("reference", " AbC1 23XY "); form.set("phone", phone);
+      await assert.rejects(lookupGuestBookingAction({ error: null }, form), (error) => /^\/bookings\/guest-booking-abc123xy\/chat\?token=[A-Za-z0-9_-]{43}$/.test(error.destination ?? ""));
+      assert.deepEqual(state.lookupQueries[0].where, { id: { endsWith: "abc123xy", mode: "insensitive" }, guestPhone: "+265993661661", userId: null });
+      assert.match(state.lookupUpdates[0].data.guestAccessTokenHash, /^[a-f0-9]{64}$/);
+      assert.ok(state.lookupUpdates[0].data.guestAccessTokenExpiresAt > new Date());
+    });
+  }
+  it("does not issue access tokens for an unmatched phone and reference", async () => {
+    const state = globalThis.board95ActionTest;
+    state.allowRequests = true; state.lookupQueries = [];
+    const form = new FormData(); form.set("reference", "ABC123XY"); form.set("phone", "993661662");
+    assert.match((await lookupGuestBookingAction({ error: null }, form)).error, /could not match/i);
+    assert.equal(state.lookupUpdates, undefined);
+    assert.equal(state.lookupQueries[0].where.userId, null);
+  });
+  it("validates phone and reference before database calls", async () => {
+    const form = new FormData();
+    assert.match((await lookupGuestBookingAction({ error: null }, form)).error, /8-character/);
+    form.set("reference", "ABC123XY"); form.set("phone", "short");
+    assert.match((await lookupGuestBookingAction({ error: null }, form)).error, /mobile number/);
+    assert.equal(globalThis.board95ActionTest.sideEffects, 0);
+  });
+  it("keeps guest lookup rate limits in place for valid requests", async () => {
+    const form = new FormData(); form.set("reference", "ABC123XY"); form.set("phone", "993661661");
+    assert.match((await lookupGuestBookingAction({ error: null }, form)).error, /Too many lookup attempts/);
+    assert.equal(globalThis.board95ActionTest.sideEffects, 0);
+  });
+});
+
 describe("homepage departing soon", () => {
+  it("keeps the taxis and lifts section separate from bus departures", async () => {
+    globalThis.board95ActionTest.tripQueries = [];
+    await getUpcomingTrips(6, new Date("2026-11-05T06:00:00Z"), "taxi");
+    assert.equal(globalThis.board95ActionTest.tripQueries[0].where.type, "TAXI");
+  });
   for (const [label, now, included, excluded] of [
     ["eight-hour cutoff", "2026-11-04T06:00:00Z", ["2026-11-04T06:00:01Z", "2026-11-04T14:00:00Z"], ["2026-11-04T05:59:59Z", "2026-11-04T06:00:00Z", "2026-11-04T14:00:01Z", "2026-11-05T06:00:00Z"]],
     ["late evening stays on today's Malawi date", "2026-11-04T20:00:00Z", ["2026-11-04T20:30:00Z", "2026-11-04T21:59:59Z"], ["2026-11-04T22:00:00Z", "2026-11-05T01:00:00Z"]],
@@ -206,6 +263,45 @@ describe("listing renewal permissions", () => {
       globalThis.board95ActionTest.session = user ? { user } : null;
       await assert.rejects(renewCarHireListingAction(new FormData()), /access required/);
     }
+    assert.equal(globalThis.board95ActionTest.sideEffects, 0);
+  });
+});
+
+
+describe("district transport routes", () => {
+  it("accepts every district in searches and normalizes Nkhata Bay", async () => {
+    const { CITIES } = await import("../src/lib/cities.ts");
+    for (const location of CITIES) assert.equal(parseFilters({ origin: location }).origin, location);
+    assert.equal(parseFilters({ origin: " nkhata bay ", destination: "DEDZA" }).origin, "NkhataBay");
+    assert.equal(parseFilters({ origin: "unknown" }).origin, undefined);
+  });
+  function districtForm(origin = "Nkhata Bay", destination = "Dedza") {
+    const form = new FormData();
+    for (const [key, value] of Object.entries({ operatorId: "district-operator", vehicleModel: "Test vehicle", plate: "TEST 123", seats: "4", origin, destination, date: "2090-01-01", time: "08:00", departurePoint: "District stage", fareMWK: "5000", active: "on" })) form.set(key, value);
+    form.append("weekdays", "1");
+    return form;
+  }
+  it("publishes a taxi departure using new districts and a correctly located stage", async () => {
+    const state = globalThis.board95ActionTest;
+    state.session = { user: { id: "admin", role: "ADMIN" } }; state.publishQueries = [];
+    await createOperatorTripAction(districtForm());
+    assert.equal(state.publishQueries.find(q => q.kind === "point").data.city, "NkhataBay");
+    const data = state.publishQueries.find(q => q.kind === "trip").data;
+    assert.equal(data.origin, "NkhataBay"); assert.equal(data.destination, "Dedza"); assert.equal(data.type, "TAXI");
+  });
+  it("saves Daily Bus Schedules for new district routes", async () => {
+    const { saveBusScheduleAction } = await import("../src/lib/bus-schedule-actions.ts");
+    const state = globalThis.board95ActionTest;
+    state.session = { user: { id: "admin", role: "ADMIN" } }; state.publishQueries = [];
+    const result = await saveBusScheduleAction({ status: "idle", message: "" }, districtForm("Karonga", "Nkhata Bay"));
+    assert.equal(result.status, "success");
+    const data = state.publishQueries.find(q => q.kind === "schedule").data;
+    assert.equal(data.origin, "Karonga"); assert.equal(data.destination, "NkhataBay");
+  });
+  it("rejects unknown or identical districts before database access", async () => {
+    globalThis.board95ActionTest.session = { user: { id: "admin", role: "ADMIN" } };
+    await assert.rejects(createOperatorTripAction(districtForm("Unknown", "Dedza")), /route/);
+    await assert.rejects(createOperatorTripAction(districtForm("dedza", "Dedza")), /route/);
     assert.equal(globalThis.board95ActionTest.sideEffects, 0);
   });
 });

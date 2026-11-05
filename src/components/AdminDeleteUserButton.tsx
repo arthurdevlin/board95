@@ -1,4 +1,6 @@
 "use client";
+import { Trash2 } from "lucide-react";
+
 
 import { useState } from "react";
 
@@ -10,7 +12,7 @@ export default function AdminDeleteUserButton({ userId, name, action }: { userId
       setPending(true);
     }}>
       <input type="hidden" name="userId" value={userId} />
-      <button className="btn btn-danger" type="submit" disabled={pending}>{pending ? "Deleting..." : "Delete"}</button>
+      <button className="btn btn-danger" type="submit" disabled={pending}><Trash2 size={16} aria-hidden="true"/>{pending ? "Deleting..." : "Delete"}</button>
     </form>
   );
 }

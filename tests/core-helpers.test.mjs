@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { dayRange, toMalawiDate } from "../src/lib/dates.ts";
-import { hashGuestToken, matchesGuestToken, normalizeMalawiPhone } from "../src/lib/guest-access.ts";
+import { hashGuestToken, matchesGuestToken, normalizeMalawiPhone, normalizeBookingReference } from "../src/lib/guest-access.ts";
 
 describe("normalizeMalawiPhone", () => {
   it("normalizes local and international Malawi numbers", () => {
@@ -13,6 +13,23 @@ describe("normalizeMalawiPhone", () => {
   it("rejects unsupported prefixes and lengths", () => {
     assert.equal(normalizeMalawiPhone("0771 234 567"), null);
     assert.equal(normalizeMalawiPhone("0991 234 56"), null);
+  });
+
+  it("matches bare, local and country-code variants to the same Malawi number", () => {
+    for (const phone of ["993661661", "0993661661", "0993 661 661", "265993661661", "+265993661661", "+265 (0) 993-661-661", "2650993661661", "00265993661661", " 993.661.661 "]) assert.equal(normalizeMalawiPhone(phone), "+265993661661", phone);
+    for (const phone of ["893661661", "0893661661", "265893661661", "+265 893 661 661"]) assert.equal(normalizeMalawiPhone(phone), "+265893661661", phone);
+  });
+
+  it("does not accept other countries, repeated country codes or arbitrary text", () => {
+    for (const phone of ["+264993661661", "265265993661661", "call0993661661", "99366166", "9936616610", "0993+661661"]) assert.equal(normalizeMalawiPhone(phone), null, phone);
+  });
+});
+
+describe("booking references", () => {
+  it("ignores case and copied spaces without accepting partial references", () => {
+    assert.equal(normalizeBookingReference("AbC123xY"), "abc123xy");
+    assert.equal(normalizeBookingReference(" ABC1 23XY\n"), "abc123xy");
+    for (const reference of ["ABC1234", "ABC123456", "ABC-1234", "", "ABC!2345"]) assert.equal(normalizeBookingReference(reference), null);
   });
 });
 

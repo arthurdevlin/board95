@@ -1,4 +1,6 @@
 "use client";
+import { LogOut } from "lucide-react";
+
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -38,7 +40,7 @@ export default function SignOutButton() {
         onClick={handleSignOut}
         disabled={pending}
       >
-        {pending ? "Signing out…" : "Sign out"}
+        <LogOut size={16} aria-hidden="true"/>{pending ? "Signing out…" : "Sign out"}
       </button>
       {error && (
         <span className="sign-out-error" role="alert">

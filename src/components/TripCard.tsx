@@ -1,119 +1,60 @@
+
+import { transportLocationName } from "@/lib/cities";
+import { ArrowRight, BadgeCheck, BusFront, CarFront, ChevronDown, MapPin } from "lucide-react";
 import { formatDate, formatMWK, formatTimestamp } from "@/lib/format";
 import type { TripListing } from "@/lib/trips";
 import BookingRequestForm from "@/components/BookingRequestForm";
 import { timetableDaysLabel } from "@/lib/bus-timetable";
 
-// Three clear levels, each with its own colour:
-// plenty left = green, running low = amber, none = red.
-function getAvailability(left: number, total: number, unit: string) {
-  const safeTotal = Math.max(0, total);
-  const safeLeft = Math.min(safeTotal, Math.max(0, left));
-  if (safeLeft === 0) {
-    return { label: "Full", tone: "is-full" };
-  }
-  if (safeLeft <= 3) {
-    return { label: `Only ${safeLeft} ${unit} left`, tone: "is-low" };
-  }
-  return { label: `${safeLeft} of ${safeTotal} ${unit} left`, tone: "is-plenty" };
+function getAvailability(left: number, total: number) {
+  const remaining = Math.min(Math.max(0, total), Math.max(0, left));
+  if (remaining === 0) return { label: "Fully booked", tone: "is-full" };
+  if (remaining <= 3) return { label: `Only ${remaining} ${remaining === 1 ? "seat" : "seats"} left`, tone: "is-low" };
+  return { label: `${remaining} seats available`, tone: "is-plenty" };
 }
 
-export default function TripCard({
-  trip,
-  preview = false,
-}: {
-  trip: TripListing;
-  preview?: boolean;
-}) {
+export default function TripCard({ trip, preview = false }: { trip: TripListing; preview?: boolean }) {
   const soldOut = trip.seatsAvailable <= 0 || trip.seatsTotal <= 0;
   const isBus = trip.type === "bus";
-  const unit = isBus ? "seats" : "spaces";
-  const { operator } = trip;
-  const availability = getAvailability(trip.seatsAvailable, trip.seatsTotal, unit);
+  const VehicleIcon = isBus ? BusFront : CarFront;
+  const availability = getAvailability(trip.seatsAvailable, trip.seatsTotal);
+  const departure = `${trip.date}T${trip.departureTime}:00+02:00`;
 
-  return (
-    <article className="trip-card rounded-xl border border-black/10 p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-lg font-semibold">
-            {trip.origin} → {trip.destination}
-          </h3>
-          <p className="text-sm text-muted">
-            {isBus ? operator.name : `Owner: ${operator.name}`}
-            {operator.verified && (
-              <span className="ml-2 rounded bg-accent/15 px-1.5 py-0.5 text-xs font-semibold text-accent">
-                ✓ Verified
-              </span>
-            )}
-          </p>
-        </div>
-        <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase text-primary">
-          {isBus ? "Bus" : "Taxi"}
-        </span>
+  return <article className={`trip-card${soldOut ? " trip-card--full" : ""}`} aria-labelledby={`trip-route-${trip.id}`}>
+    <header className="trip-card-header">
+      <span className="trip-provider-icon"><VehicleIcon size={17} strokeWidth={1.8} aria-hidden="true"/></span>
+      <span className="trip-provider-name" title={trip.operator.name}>{trip.operator.name}</span>
+      {trip.operator.verified && <span className="trip-verified" title="Verified operator"><BadgeCheck size={16} aria-hidden="true"/><span className="sr-only">Verified operator</span></span>}
+      <span className="trip-service-tag">{isBus ? "Bus" : "Taxi"}</span>
+    </header>
+    <div className="trip-card-body">
+      <h3 className="trip-route" id={`trip-route-${trip.id}`}><span>{transportLocationName(trip.origin)}</span><ArrowRight size={16} aria-hidden="true"/><span className="sr-only">to</span><span>{transportLocationName(trip.destination)}</span></h3>
+      <div className="trip-departure">
+        <div className="trip-departure-line"><time dateTime={departure}>{trip.departureTime}</time><span>{formatDate(trip.date)}</span></div>
+        <p className="trip-time-zone">Departure · Malawi time</p>
+        <p className="trip-point" title={trip.departurePoint}><MapPin size={13} aria-hidden="true"/><span>{trip.departurePoint}</span></p>
       </div>
-
-      <p className="trip-point">{trip.departurePoint}</p>
-      <p className="field-hint">{trip.operatingDays ? `${timetableDaysLabel(trip.operatingDays)} · ${trip.departureTime} Malawi time` : `Posted ${formatTimestamp(trip.createdAt)}`}</p>
-
-      <details className="trip-disclosure">
-        <summary>
-          <span className="trip-summary-primary">
-            <span className="trip-summary-departure">
-              <span className="trip-summary-label">Departs</span>
-              <span className="trip-summary-date">{formatDate(trip.date)}</span>
-              <time className="trip-summary-time">{trip.departureTime}</time>
-            </span>
-            <span className="trip-summary-fare">
-              <span className="trip-summary-label">Fare</span>
-              <strong>{formatMWK(trip.fareMWK)}</strong>
-            </span>
-          </span>
-          <span className="trip-summary-secondary">
-            <span className={`trip-availability ${availability.tone}`}>
-              {availability.label}
-            </span>
-            <span className="trip-disclosure-action">
-              <span className="trip-disclosure-closed">More details</span>
-              <span className="trip-disclosure-open">Less details</span>
-              <span className="trip-disclosure-chevron" aria-hidden="true" />
-            </span>
-          </span>
-        </summary>
-
-        <div className="trip-details-panel">
-          <h4 className="trip-details-heading">Trip information</h4>
-          <dl className="trip-detail-grid">
-            <div>
-              <dt>Vehicle</dt>
-              <dd className="trip-vehicle-value">
-                <span>{trip.vehicle.model}</span>
-                <span className="trip-plate">{trip.vehicle.plate}</span>
-              </dd>
-            </div>
-            {operator.phone && !preview && (
-              <div>
-                <dt>Company phone</dt>
-                <dd>
-                  <a href={`tel:${operator.phone.replace(/\s/g, "")}`}>
-                    {operator.phone}
-                  </a>
-                </dd>
-              </div>
-            )}
-          </dl>
-
-          {trip.pickup.available && (
-            <p className="mt-3 text-sm">
-              <span className="rounded bg-secondary/30 px-2 py-0.5 font-medium">
-                Pickup available
-              </span>{" "}
-              <span className="text-muted">+{formatMWK(trip.pickup.extraFeeMWK ?? 0)}</span>
-            </p>
-          )}
-
-        </div>
-      </details>
-
-      {preview ? <p className="listing-preview-note">Listing preview · Passenger bookings are disabled.</p> : <BookingRequestForm tripId={trip.id} pickupAvailable={trip.pickup.available} soldOut={soldOut} />}
-    </article>
-  );
+      <div className="trip-purchase">
+        <span className="trip-fare-label">Fare per seat</span>
+        <strong className="trip-fare">{formatMWK(trip.fareMWK)}</strong>
+        {preview ? <span className="trip-preview-label">Listing preview</span> : <BookingRequestForm tripId={trip.id} tripLabel={`${transportLocationName(trip.origin)} to ${transportLocationName(trip.destination)} at ${trip.departureTime}`} pickupAvailable={trip.pickup.available} soldOut={soldOut}/>}
+      </div>
+    </div>
+    <details className="trip-disclosure">
+      <summary>
+        <span className={`trip-availability ${availability.tone}`}>{availability.label}</span>
+        <span className="trip-disclosure-action"><span className="trip-disclosure-closed">Trip details</span><span className="trip-disclosure-open">Hide details</span><ChevronDown className="trip-disclosure-chevron" size={14} aria-hidden="true"/></span>
+      </summary>
+      <div className="trip-details-panel">
+        <dl className="trip-detail-grid">
+          <div><dt>Vehicle</dt><dd>{trip.vehicle.model}<span className="trip-plate">{trip.vehicle.plate}</span></dd></div>
+          <div><dt>Departure point</dt><dd>{trip.departurePoint}</dd></div>
+          <div><dt>{trip.operatingDays ? "Operating days" : "Published"}</dt><dd>{trip.operatingDays ? timetableDaysLabel(trip.operatingDays) : formatTimestamp(trip.createdAt)}</dd></div>
+          {trip.operator.phone && !preview && <div><dt>Company phone</dt><dd><a href={`tel:${trip.operator.phone.replace(/\s/g, "")}`}>{trip.operator.phone}</a></dd></div>}
+          {trip.pickup.available && <div><dt>Optional pickup</dt><dd>{trip.pickup.extraFeeMWK ? `+${formatMWK(trip.pickup.extraFeeMWK)}` : "No extra charge"}</dd></div>}
+        </dl>
+        {preview && <p className="trip-preview-note">Passenger bookings are disabled in this preview.</p>}
+      </div>
+    </details>
+  </article>;
 }
