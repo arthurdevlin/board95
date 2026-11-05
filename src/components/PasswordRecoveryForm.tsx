@@ -19,7 +19,6 @@ export function RequestPasswordResetForm() {
     const email = String(new FormData(event.currentTarget).get("email") ?? "")
       .trim()
       .toLowerCase();
-
     try {
       const result = await authClient.requestPasswordReset({
         email,

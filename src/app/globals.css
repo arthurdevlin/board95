@@ -121,7 +121,7 @@ select:focus-visible {
 .site-logo {
   display: block;
   width: 10rem;
-  height: 2.6rem;
+  height: auto;
   object-fit: cover;
   object-position: center;
 }
@@ -1467,7 +1467,7 @@ html[data-theme="dark"] .primary-navigation > a[aria-current="location"] { backg
   .account-fleet-summary { min-width: 13rem; }
 }
 @media (max-width: 760px) {
-  .site-logo { width: 8.75rem; height: 2.25rem; }
+  .site-logo { width: 8.75rem; }
   .site-header > div { min-height: 64px; }
   .account-welcome { grid-template-columns: 1fr; }
   .account-fleet-summary { width: 100%; }
