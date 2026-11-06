@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Ticket } from "lucide-react";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { getSession } from "@/lib/session";
@@ -9,7 +10,7 @@ import type { NavigationEntry } from "@/components/DashboardSectionNavigation";
 import { operatorWorkspace } from "@/lib/operator-workspace";
 
 export default function Header() {
-  return <header className="site-header"><div className="site-header-inner"><Suspense fallback={<span className="brand-link"><Image src="/b95logo.png" alt="Board95" width={160} height={40} className="site-logo" loading="eager"/></span>}><HeaderBrand/></Suspense><Suspense fallback={<span className="user-menu-placeholder"/>}><HeaderMenu/></Suspense></div></header>;
+  return <header className="site-header"><div className="site-header-inner"><Suspense fallback={<span className="brand-link"><Image src="/b95logo.png" alt="Board95" width={160} height={40} className="site-logo" loading="eager"/></span>}><HeaderBrand/></Suspense><Link href="/bookings/lookup" className="header-booking-link" aria-label="Find your booking"><Ticket size={18} aria-hidden="true"/><span className="header-booking-label">Find your booking</span><span className="header-booking-label-compact">Find booking</span></Link><Suspense fallback={<span className="user-menu-placeholder"/>}><HeaderMenu/></Suspense></div></header>;
 }
 
 async function HeaderBrand() {
@@ -21,7 +22,7 @@ async function HeaderBrand() {
 async function HeaderMenu() {
   await connection();
   const session = await getSession();
-  if (!session) return <RoleNavigation signedIn={false} links={[{href:"/",label:"Home"},{href:"/transport",label:"Find transport"},{href:"/car-hire",label:"Car hire"}]}/>;
+  if (!session) return <RoleNavigation signedIn={false} links={[{href:"/",label:"Home"},{href:"/car-hire",label:"Car hire"}]}/>;
   let links: {href:string;label:string}[];
   let groups: NavigationEntry[] = [];
   if (session.user.role === "ADMIN") {
@@ -96,10 +97,10 @@ async function HeaderMenu() {
         ] },
       ] }];
     } else {
-      links = [{href:"/transport",label:"Find transport"},{href:"/car-hire",label:"Car hire"},{href:"/account#my-bookings",label:"My bookings"}];
+      links = [{href:"/car-hire",label:"Car hire"},{href:"/account#my-bookings",label:"My bookings"}];
     }
   } else {
-    links = [{href:"/transport",label:"Find transport"},{href:"/car-hire",label:"Car hire"},{href:"/account#my-bookings",label:"My bookings"}];
+    links = [{href:"/car-hire",label:"Car hire"},{href:"/account#my-bookings",label:"My bookings"}];
   }
   const home = "/account";
   return <RoleNavigation signedIn name={session.user.name} image={session.user.image} links={[{href:home,label:"Home"}, ...links]} groups={groups.length ? [{label:"Home",href:home}, ...groups] : groups}/>;

@@ -1,3 +1,6 @@
+import { Suspense } from "react";
+import ServiceReviews from "@/components/ServiceReviews";
+import ShareListing from "@/components/ShareListing";
 
 import { transportLocationName } from "@/lib/cities";
 import { ArrowRight, BadgeCheck, BusFront, CarFront, ChevronDown, MapPin } from "lucide-react";
@@ -26,6 +29,7 @@ export default function TripCard({ trip, preview = false }: { trip: TripListing;
       <span className="trip-provider-name" title={trip.operator.name}>{trip.operator.name}</span>
       {trip.operator.verified && <span className="trip-verified" title="Verified operator"><BadgeCheck size={16} aria-hidden="true"/><span className="sr-only">Verified operator</span></span>}
       <span className="trip-service-tag">{isBus ? "Bus" : "Taxi"}</span>
+      {trip.shareable && <ShareListing path={`/trips/${encodeURIComponent(trip.id)}`} title={`${transportLocationName(trip.origin)} to ${transportLocationName(trip.destination)}`} text={`${trip.operator.name}: ${transportLocationName(trip.origin)} to ${transportLocationName(trip.destination)} · ${formatDate(trip.date)} at ${trip.departureTime} (Malawi time) · ${formatMWK(trip.fareMWK)} per seat on Board95`}/>}
     </header>
     <div className="trip-card-body">
       <h3 className="trip-route" id={`trip-route-${trip.id}`}><span>{transportLocationName(trip.origin)}</span><ArrowRight size={16} aria-hidden="true"/><span className="sr-only">to</span><span>{transportLocationName(trip.destination)}</span></h3>
@@ -45,7 +49,7 @@ export default function TripCard({ trip, preview = false }: { trip: TripListing;
         <span className={`trip-availability ${availability.tone}`}>{availability.label}</span>
         <span className="trip-disclosure-action"><span className="trip-disclosure-closed">Trip details</span><span className="trip-disclosure-open">Hide details</span><ChevronDown className="trip-disclosure-chevron" size={14} aria-hidden="true"/></span>
       </summary>
-      <div className="trip-details-panel">
+      <div className="trip-details-panel"><Suspense fallback={null}><ServiceReviews kind="operatorId" id={trip.operatorId} label="Operator"/><ServiceReviews kind="vehicleId" id={trip.vehicleId} label="Vehicle"/></Suspense>
         <dl className="trip-detail-grid">
           <div><dt>Vehicle</dt><dd>{trip.vehicle.model}<span className="trip-plate">{trip.vehicle.plate}</span></dd></div>
           <div><dt>Departure point</dt><dd>{trip.departurePoint}</dd></div>

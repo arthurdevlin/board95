@@ -103,7 +103,7 @@ export default function BookingRequestForm({
               </div>
               {state.status === "unavailable" && <p className="alert alert-error booking-feedback" role="alert">{state.message}</p>}
               {state.status === "error" && <p className="alert alert-error booking-feedback" role="alert">{state.message}</p>}
-            </form>
+            <label className="pickup-check dashboard-form-wide"><input name="whatsappUpdates" type="checkbox"/><span>I agree to WhatsApp booking updates if SMS delivery fails.</span></label></form>
           )}
         </div>
         <ReferenceLoading pending={pending}/>

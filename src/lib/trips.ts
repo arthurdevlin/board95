@@ -24,9 +24,13 @@ export type TripListing = {
   pickup: { available: boolean; extraFeeMWK?: number };
   operator: { name: string; verified: boolean; phone?: string };
   operatingDays?: number[];
+  shareable: boolean;
+  operatorId: string;
+  vehicleId: string;
 };
 
 const tripSelect = {
+  operatorId: true, vehicleId: true,
   id: true,
   type: true,
   origin: true,
@@ -38,7 +42,7 @@ const tripSelect = {
   seatsAvailable: true,
   pickupAvailable: true,
   pickupFeeMWK: true,
-  operator: { select: { name: true, verified: true, kind: true, phone: true } },
+  operator: { select: { name: true, verified: true, kind: true, phone: true, active: true, owner: { select: { active: true } } } },
   vehicle: { select: { model: true, plate: true } },
   departurePoint: { select: { name: true } },
   schedule: { select: { weekdays: true } },
@@ -48,7 +52,7 @@ type TripRow = Prisma.TripGetPayload<{ select: typeof tripSelect }>;
 
 function toListing(row: TripRow): TripListing {
   return {
-    id: row.id,
+    id: row.id, operatorId: row.operatorId, vehicleId: row.vehicleId,
     type: row.type === "BUS" ? "bus" : "taxi",
     origin: row.origin,
     destination: row.destination,
@@ -75,6 +79,7 @@ function toListing(row: TripRow): TripListing {
           ? (row.operator.phone ?? undefined)
           : undefined,
     },
+    shareable: row.operator.active && row.operator.verified && row.operator.owner?.active !== false && row.departureAt > new Date(),
   };
 }
 
@@ -86,6 +91,22 @@ export type Filters = {
   type?: TransportType;
   invalidDate?: boolean;
 };
+
+// Shared links only resolve to public, upcoming departures.
+export async function getPublicTrip(id: string, now = new Date()): Promise<TripListing | null> {
+  const row = await prisma.trip.findFirst({
+    where: {
+      id,
+      departureAt: { gt: now },
+      cancelled: false,
+      vehicle: { active: true },
+      OR: [{ scheduleId: null }, { scheduleOverride: true }, { schedule: { active: true } }],
+      operator: { active: true, verified: true, OR: [{ ownerId: null }, { owner: { active: true } }] },
+    },
+    select: tripSelect,
+  });
+  return row ? toListing(row) : null;
+}
 
 type RawParams = Record<string, string | string[] | undefined>;
 

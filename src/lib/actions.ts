@@ -16,6 +16,7 @@ import { removeCarPhoto, storeCarPhoto } from "@/lib/car-photo-storage";
 import { CAR_HIRE_DISTRICTS, type CarHireDistrictCode } from "@/lib/car-hire-districts";
 import { isDatabaseAmount, isSelfServiceApplicationKind } from "@/lib/validation";
 import { parseTransportLocation, transportLocationName } from "@/lib/cities";
+import { queueMobile } from "@/lib/mobile-notifications";
 import { canApplyForOperator, canBrowseListings } from "@/lib/access";
 
 export type BookingRequestState = {
@@ -168,6 +169,7 @@ export async function requestSeatAction(
           guestName,
           guestPhone: phone,
           guestEmail: email || null,
+          whatsappUpdates: formData.get("whatsappUpdates") === "on",
           pickupRequested,
           pickupLocation: pickupRequested ? pickupLocation : null,
           status: "PENDING",
@@ -176,6 +178,7 @@ export async function requestSeatAction(
         },
       });
 
+      await queueMobile(`trip:${booking.id}:received`, phone, `Board95 booking received. Reference ${booking.id.slice(-8).toUpperCase()}. Pending operator confirmation. Recover at ${board95Url("/bookings/lookup")}`, formData.get("whatsappUpdates") === "on", undefined, tx);
       return `created:${booking.id}` as const;
     }, { isolationLevel: "Serializable" });
   } catch {
@@ -492,7 +495,7 @@ export async function updateBookingStatusAction(formData: FormData) {
       id: bookingId,
       ...(session.user.role === "ADMIN" ? {} : session.user.role === "OWNER" ? { OR: [{ trip: { operator: { ownerId: session.user.id, active: true, verified: true } } }, { tripHistory: { operator: { ownerId: session.user.id, active: true, verified: true } } }] } : { OR: [{ trip: { operatorId: { in: memberships.map((membership) => membership.operatorId) } } }, { tripHistory: { operatorId: { in: memberships.map((membership) => membership.operatorId) } } }] }),
     },
-    select: { id: true, userId: true, tripId: true, status: true, seats: true, reviewedByAdmin: true, trip: { select: { departureAt: true, seatsTotal: true } }, tripHistory: { select: { departureAt: true, seatsTotal: true } } },
+    select: { id: true, userId: true, tripId: true, status: true, seats: true, reviewedByAdmin: true, guestPhone: true, whatsappUpdates: true, trip: { select: { departureAt: true, seatsTotal: true } }, tripHistory: { select: { departureAt: true, seatsTotal: true } } },
   }).then((row) => row ? withTripHistory(row) : null);
   if (!booking) throw new Error("Booking not found.");
   const nextStatus = status as "ACCEPTED" | "DECLINED" | "CANCELLED" | "COMPLETED";
@@ -512,6 +515,7 @@ export async function updateBookingStatusAction(formData: FormData) {
       const restored = await tx.trip.updateMany({ where: { id: booking.tripId ?? "", seatsAvailable: { lte: booking.trip.seatsTotal - booking.seats } }, data: { seatsAvailable: { increment: booking.seats } } });
       if (restored.count !== 1) throw new Error("Seat inventory could not be restored safely.");
     }
+    await queueMobile(`trip:${booking.id}:${nextStatus}`, booking.guestPhone, `Board95 booking ${nextStatus.toLowerCase()}. Reference ${booking.id.slice(-8).toUpperCase()}. Details: ${board95Url("/bookings/lookup")}`, booking.whatsappUpdates, undefined, tx);
   });
   updateTag("public-trips");
   revalidatePath("/operator");
@@ -545,7 +549,8 @@ export async function cancelPassengerBookingAction(formData: FormData) {
   revalidatePath("/operator");
   revalidatePath("/admin");
   revalidatePath("/transport");
-  const details = await prisma.booking.findUnique({ where: { id: booking.id }, select: { trip: { select: { origin: true, destination: true, operator: { select: { owner: { select: { email: true } } } } } }, tripHistory: { select: { origin: true, destination: true, operator: { select: { owner: { select: { email: true } } } } } } } }).then((row) => row ? withTripHistory(row) : null);
+  const details = await prisma.booking.findUnique({ where: { id: booking.id }, select: { guestPhone: true, whatsappUpdates: true, trip: { select: { origin: true, destination: true, operator: { select: { owner: { select: { email: true } } } } } }, tripHistory: { select: { origin: true, destination: true, operator: { select: { owner: { select: { email: true } } } } } } } }).then((row) => row ? withTripHistory(row) : null);
+  await queueMobile(`trip:${booking.id}:cancelled`, details?.guestPhone, `Board95 booking cancelled. Reference ${booking.id.slice(-8).toUpperCase()}.`, details?.whatsappUpdates);
   await Promise.all([
     sendBoard95Email({ to: session.user.email, subject: "Booking cancelled", lines: [`Your request for ${transportLocationName(details?.trip.origin ?? "")} to ${transportLocationName(details?.trip.destination ?? "")} was cancelled.`, `Reference: ${booking.id.slice(-8).toUpperCase()}.`] }),
     sendBoard95Email({ to: details?.trip.operator.owner?.email, subject: "Passenger cancelled a booking", lines: [`${booking.guestName ?? "A passenger"} cancelled a booking.`, `Reference: ${booking.id.slice(-8).toUpperCase()}.`] }),
@@ -931,7 +936,7 @@ export async function deleteCarHireListingAction(formData: FormData) {
   revalidatePath("/admin");
 }
 
-export type CarHireRequestState = { status: "idle" | "success" | "error"; message: string; reference?: string; totalMWK?: number };
+export type CarHireRequestState = { guestChatUrl?: string; status: "idle" | "success" | "error"; message: string; reference?: string; totalMWK?: number };
 
 type CarHireRequestOutcome =
   | { kind: "unavailable" | "self-request" | "invalid-total" | "conflict" }
@@ -957,6 +962,7 @@ export async function requestCarHireAction(_previous: CarHireRequestState, formD
   const today = toMalawiDate(new Date());
   const days = Math.round((endsAt.getTime() - startsAt.getTime()) / 86400000);
   if (startDate < today || days < 1 || days > 60) return { status: "error", message: "Choose a rental period starting today or later, from 1 to 60 days." };
+  const rentalToken = !session ? randomBytes(32).toString("base64url") : null;
   let outcome: CarHireRequestOutcome;
   try {
     outcome = await prisma.$transaction(async (tx) => {
@@ -970,7 +976,8 @@ export async function requestCarHireAction(_previous: CarHireRequestState, formD
       if (!isDatabaseAmount(totalMWK)) return { kind: "invalid-total" as const };
       const conflict = await tx.carHireRequest.findFirst({ where: { listingId, status: "ACCEPTED", startsAt: { lt: endsAt }, endsAt: { gt: startsAt } }, select: { id: true } });
       if (conflict) return { kind: "conflict" as const };
-      const request = await tx.carHireRequest.create({ data: { listingId, passengerId: session?.user?.id ?? null, guestName, guestPhone: phone, guestEmail: guestEmail || null, startsAt, endsAt, totalMWK } });
+      const request = await tx.carHireRequest.create({ data: { listingId, guestAccessTokenHash: rentalToken ? hashGuestToken(rentalToken) : null, guestAccessTokenExpiresAt: rentalToken ? new Date(endsAt.getTime() + 30 * 86400000) : null, whatsappUpdates: formData.get("whatsappUpdates") === "on", passengerId: session?.user?.id ?? null, guestName, guestPhone: phone, guestEmail: guestEmail || null, startsAt, endsAt, totalMWK } });
+      await queueMobile(`rental:${request.id}:received`, phone, `Board95 rental request received. Reference ${request.id.slice(-8).toUpperCase()}. Pending owner confirmation. Recover at ${board95Url("/bookings/lookup")}`, formData.get("whatsappUpdates") === "on", undefined, tx);
       return { kind: "created" as const, request, listing, totalMWK };
     }, { isolationLevel: "Serializable" });
   } catch {
@@ -993,7 +1000,7 @@ export async function requestCarHireAction(_previous: CarHireRequestState, formD
   ]);
   revalidatePath("/car-hire/dashboard");
   revalidatePath("/account");
-  return { status: "success", message: `Your request was sent to ${listing.owner.name}.`, reference, totalMWK };
+  return { status: "success", message: `Your request was sent to ${listing.owner.name}.`, reference, totalMWK, guestChatUrl: `/rentals/${request.id}${rentalToken ? `?token=${rentalToken}` : ""}` };
 }
 
 export async function reviewCarHireRequestAction(formData: FormData) {
@@ -1011,6 +1018,7 @@ export async function reviewCarHireRequestAction(formData: FormData) {
     }
     const updated = await tx.carHireRequest.updateMany({ where: { id: request.id, status: "PENDING" }, data: { status: decision as "ACCEPTED" | "DECLINED", reviewedByAdmin: session.user.role === "ADMIN" } });
     if (updated.count !== 1) throw new Error("This rental request has already been reviewed.");
+    await queueMobile(`rental:${request.id}:${decision}`, request.guestPhone, `Board95 rental ${decision.toLowerCase()}. Reference ${request.id.slice(-8).toUpperCase()}. Details: ${board95Url("/bookings/lookup")}`, request.whatsappUpdates, undefined, tx);
     return request;
   }, { isolationLevel: "Serializable" });
   await sendBoard95Email({ to: request.guestEmail ?? request.passenger?.email, subject: decision === "ACCEPTED" ? "Your car-hire request was accepted" : "Your car-hire request was declined", lines: [`${request.listing.owner.name} ${decision === "ACCEPTED" ? "accepted" : "declined"} your request for ${request.listing.name}.`, `Estimated total: MWK ${request.totalMWK}.`, ...(session.user.role === "ADMIN" ? ["This decision was made by a Board95 administrator."] : [])] });
@@ -1026,6 +1034,7 @@ export async function cancelCarHireRequestAction(formData: FormData) {
   if (!request || request.startsAt <= new Date()) throw new Error("Only future rental requests can be cancelled.");
   const cancelled = await prisma.carHireRequest.updateMany({ where: { id: request.id, passengerId: session.user.id, status: request.status }, data: { status: "CANCELLED" } });
   if (cancelled.count !== 1) throw new Error("This rental request has already changed.");
+  await queueMobile(`rental:${request.id}:cancelled`, request.guestPhone, `Board95 rental cancelled. Reference ${request.id.slice(-8).toUpperCase()}.`, request.whatsappUpdates);
   await sendBoard95Email({ to: request.listing.owner.email, subject: "Car-hire request cancelled", lines: [`${request.guestName} cancelled the request for ${request.listing.name}.`, `Dates: ${toMalawiDate(request.startsAt)} to ${toMalawiDate(request.endsAt)}.`] });
   revalidatePath("/account");
   revalidatePath("/car-hire/dashboard");

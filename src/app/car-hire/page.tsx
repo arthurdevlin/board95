@@ -1,3 +1,5 @@
+import ServiceReviews from "@/components/ServiceReviews";
+import ShareListing from "@/components/ShareListing";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { prisma } from "@/lib/prisma";
@@ -79,7 +81,7 @@ async function CarHireListings({ searchParams }: { searchParams: SearchParams })
   return <>
     <div className={`hire-hero${listings.length ? " has-previews" : ""}`}>
       <span className="hero-watermark" aria-hidden="true">95</span>
-      <div className="dashboard-intro hire-intro"><p className="dashboard-eyebrow">BOARD95 / {preview ? "YOUR VEHICLES" : "CAR HIRE"}</p><h1 className="page-title page-title--plain">{preview ? "Your car-hire listing previews" : "Find your next car"}</h1><p>{preview ? "Preview your own vehicles. Rental requests and contact actions are disabled." : "Compare cars and daily rates across Malawi."}</p>{!preview && <span className="hire-hero-footnote">Choose a car. Contact the owner. Plan your day.</span>}{preview && <Link href={roleHome(session?.user)}>Back to your dashboard</Link>}</div>
+      <div className="dashboard-intro hire-intro"><p className="dashboard-eyebrow">BOARD95 / {preview ? "YOUR VEHICLES" : "CAR HIRE"}</p><h1 className="page-title page-title--plain">{preview ? "Your car-hire listing previews" : "Find your next car"}</h1><p>{preview ? "Preview your own vehicles. Rental requests and contact actions are disabled." : "Compare cars and daily rates across Malawi."}</p>{!preview && <span className="hire-hero-footnote">Choose a car. Contact the owner. Plan your day. <Link href="/bookings/lookup">Find a rental</Link></span>}{preview && <Link href={roleHome(session?.user)}>Back to your dashboard</Link>}</div>
       <CarHireCarousel key={listings.map(({ id }) => id).join(",")} cars={listings.slice(0, 6).map((listing) => ({ id: listing.id, name: listing.name, model: listing.model, photoUrl: listing.photoUrl, dailyRateMWK: listing.dailyRateMWK, district: carHireDistrictName(listing.district), type: typeLabels[listing.vehicleType] }))}/>
     </div>
     <CarHireSearch key={JSON.stringify([selectedType, selectedDistrict, query])} type={selectedType} district={selectedDistrict} query={query} showPostOption={!preview}/>
@@ -94,9 +96,10 @@ async function CarHireListings({ searchParams }: { searchParams: SearchParams })
         <h2><Link href={`/car-hire/${listing.id}`}>{listing.name}</Link></h2>
         <p className="hire-model" title={listing.model}>{listing.model}</p>
         <p className="hire-card-location"><MapPin size={13} aria-hidden="true"/>{carHireDistrictName(listing.district)}</p>
-        <p className="hire-card-rate"><strong>{formatMWK(listing.dailyRateMWK)}</strong><span>/ day</span></p>
+        <ServiceReviews kind="carListingId" id={listing.id} label="Vehicle"/><p className="hire-card-rate"><strong>{formatMWK(listing.dailyRateMWK)}</strong><span>/ day</span></p>
         </div>
         <div className="hire-card-footer"><Link className="btn btn-primary hire-card-action" href={`/car-hire/${listing.id}`}>View car <ArrowUpRight size={16} aria-hidden="true"/></Link>
+        {listing.available && <ShareListing path={`/car-hire/${encodeURIComponent(listing.id)}`} title={listing.name} text={`${listing.name} · ${listing.model} for hire in ${carHireDistrictName(listing.district)} · ${formatMWK(listing.dailyRateMWK)} per day on Board95`}/>}
         {listing.contactPhone && !preview && <div className="hire-contact-links"><a href={`tel:${listing.contactPhone}`} aria-label={`Call ${displayPhone(listing.contactPhone)}`}><Phone size={15} aria-hidden="true"/><span className="hire-contact-text">Call</span></a><a href={`https://wa.me/${listing.contactPhone.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" aria-label={`Contact ${listing.name} on WhatsApp`}><MessageCircle size={16} aria-hidden="true"/><span className="hire-contact-text">WhatsApp</span></a></div>}
         </div>
       </article>)}</div>

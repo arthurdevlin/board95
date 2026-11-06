@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Send } from "lucide-react";
 import { useActionState, useState } from "react";
 import BookingReference from "@/components/BookingReference";
@@ -25,7 +26,7 @@ export default function CarHireRequestForm({
         <p>{state.message}</p>
         <p>Estimate: {formatMWK(state.totalMWK ?? 0)}</p>
         {state.reference && <BookingReference reference={state.reference} />}
-        <p>The owner will confirm the dates and final arrangements.</p>
+        <p>The owner will confirm the dates and final arrangements.</p>{state.guestChatUrl && <Link className="btn btn-secondary" href={state.guestChatUrl}>Open rental and messages</Link>}<Link href="/bookings/lookup">Recover a rental with reference and phone</Link>
         <button
           className="btn btn-secondary"
           type="button"
@@ -112,7 +113,7 @@ export default function CarHireRequestForm({
           <Send size={16} aria-hidden="true" />
           {pending ? "Sending request…" : "Send hire request"}
         </button>
-      </form>
+      <label className="pickup-check dashboard-form-wide"><input name="whatsappUpdates" type="checkbox"/><span>I agree to WhatsApp booking updates if SMS delivery fails.</span></label></form>
     </div>
   );
 }

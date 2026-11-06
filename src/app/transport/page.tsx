@@ -13,7 +13,7 @@ import { getSession } from "@/lib/session";
 import { canBrowseListings, roleHome } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 
-export const metadata = { title: "Find transport | Board95" };
+export const metadata = { title: "Trip results | Board95" };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -75,7 +75,7 @@ async function Results({ searchParams }: { searchParams: SearchParams }) {
   };
   return (
     <>
-      <PageIntro><p className="dashboard-eyebrow">TRAVEL ACROSS MALAWI</p><h1 className="page-title page-title--plain">{preview ? "Your transport listing previews" : company ? `${company.name} departures` : "Find transport"}</h1><p>Find buses, taxis and lifts between Malawi districts.</p></PageIntro>
+      <PageIntro><p className="dashboard-eyebrow">SEARCH RESULTS</p><h1 className="page-title page-title--plain">{preview ? "Your transport listing previews" : company ? `${company.name} departures` : "Trip results"}</h1><p>Compare available rides or adjust your search below.</p></PageIntro>
       {preview && <p className="notice">Preview your own listings as passengers see them. Booking and contact actions are disabled. <Link href={roleHome(session?.user)}>Back to your dashboard</Link></p>}
       {filters.company && !company && <p className="notice">This bus company is unavailable.</p>}
       <div className="search-panel">

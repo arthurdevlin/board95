@@ -11,10 +11,16 @@ const mocks = {
   "@/lib/session": "export async function getSession() { return globalThis.board95ActionTest.session; }",
   "@/lib/prisma": `export const prisma = new Proxy({}, { get(_target, key) {
     const state = globalThis.board95ActionTest;
+    if (key === 'trip' && state.sharedTripQueries) return {
+      async findFirst(query) { state.sharedTripQueries.push(query); return state.sharedTripRow ?? null; },
+    };
     if (state.publishQueries) {
       const operator = { async findFirst() { return { id: 'district-operator', kind: 'TAXI_OWNER' }; } };
       const tx = { operator,
-        vehicle: { async findUnique() { return { id: 'district-vehicle', operatorId: 'district-operator', model: 'Test vehicle', seats: 4, active: true }; } },
+        vehicle: {
+          async findUnique() { return { id: 'district-vehicle', operatorId: 'district-operator', model: 'Test vehicle', seats: 4, active: true }; },
+          async findFirst(query) { if (query.where.operatorId !== 'district-operator') throw new Error('Missing fleet company scope'); return { id: 'district-vehicle', operatorId: 'district-operator', model: 'Test vehicle', seats: 4, active: true }; },
+        },
         departurePoint: { async findFirst() { return null; }, async create(query) { state.publishQueries.push({ kind: 'point', ...query }); return { id: 'district-stage' }; } },
         trip: { async findFirst() { return null; }, async create(query) { state.publishQueries.push({ kind: 'trip', ...query }); return { id: 'district-trip' }; } },
         busSchedule: { async findFirst() { return null; }, async create(query) { state.publishQueries.push({ kind: 'schedule', ...query }); return { id: 'district-schedule' }; } },
@@ -59,7 +65,7 @@ registerHooks({
   },
 });
 const { createOperatorTripAction, requestSeatAction, requestCarHireAction, submitAccountApplicationAction, applyForAccountTypeFromSignup, setUserPasswordAction, renewCarHireListingAction, lookupGuestBookingAction } = await import(actionsUrl);
-const { parseFilters, searchTrips, getRegisteredBusCompanies, getUpcomingTrips } = await import("../src/lib/trips.ts");
+const { parseFilters, searchTrips, getRegisteredBusCompanies, getUpcomingTrips, getPublicTrip } = await import("../src/lib/trips.ts");
 
 beforeEach(() => { globalThis.board95ActionTest = { session: null, sideEffects: 0 }; });
 
@@ -125,6 +131,46 @@ describe("homepage departing soon", () => {
       assert.equal(query.take, 6);
     });
   }
+});
+
+describe("shared trip links", () => {
+  it("requires a future, public departure and returns null for unavailable links", async () => {
+    const now = new Date("2030-01-01T08:00:00Z");
+    globalThis.board95ActionTest.sharedTripQueries = [];
+    assert.equal(await getPublicTrip("shared-departure", now), null);
+    const { where } = globalThis.board95ActionTest.sharedTripQueries[0];
+    assert.equal(where.id, "shared-departure");
+    assert.deepEqual(where.departureAt, { gt: now });
+    assert.equal(where.cancelled, false);
+    assert.deepEqual(where.vehicle, { active: true });
+    assert.deepEqual(where.operator, { active: true, verified: true, OR: [{ ownerId: null }, { owner: { active: true } }] });
+    assert.deepEqual(where.OR, [{ scheduleId: null }, { scheduleOverride: true }, { schedule: { active: true } }]);
+  });
+
+  it("opens the exact departure without exposing a taxi owner's phone", async () => {
+    const state = globalThis.board95ActionTest;
+    state.sharedTripQueries = [];
+    state.sharedTripRow = {
+      id: "taxi-departure", operatorId: "operator", vehicleId: "vehicle", type: "TAXI",
+      origin: "Blantyre", destination: "Lilongwe", departureAt: new Date("2030-01-01T08:00:00Z"),
+      createdAt: new Date("2029-12-31T08:00:00Z"), fareMWK: 25000, seatsTotal: 4, seatsAvailable: 0,
+      pickupAvailable: false, pickupFeeMWK: null, schedule: null,
+      vehicle: { model: "Saloon", plate: "TEST" }, departurePoint: { name: "Station" },
+      operator: { name: "Operator", verified: true, active: true, owner: { active: true }, kind: "TAXI_OWNER", phone: "+265991000000" },
+    };
+    const trip = await getPublicTrip("taxi-departure", new Date("2029-12-31T10:00:00Z"));
+    assert.equal(trip.id, "taxi-departure");
+    assert.equal(trip.departureTime, "10:00");
+    assert.equal(trip.seatsAvailable, 0); // The existing card displays fully booked.
+    assert.equal(trip.operator.phone, undefined);
+    assert.equal(trip.departurePoint, "Station");
+    assert.equal(trip.shareable, true);
+    state.sharedTripRow.operator.verified = false;
+    assert.equal((await getPublicTrip("taxi-departure")).shareable, false);
+    state.sharedTripRow.operator.verified = true;
+    state.sharedTripRow.operator.owner.active = false;
+    assert.equal((await getPublicTrip("taxi-departure")).shareable, false);
+  });
 });
 
 describe("company filters and preview scope", () => {
@@ -293,7 +339,9 @@ describe("district transport routes", () => {
     const { saveBusScheduleAction } = await import("../src/lib/bus-schedule-actions.ts");
     const state = globalThis.board95ActionTest;
     state.session = { user: { id: "admin", role: "ADMIN" } }; state.publishQueries = [];
-    const result = await saveBusScheduleAction({ status: "idle", message: "" }, districtForm("Karonga", "Nkhata Bay"));
+    const form = districtForm("Karonga", "Nkhata Bay");
+    form.set("vehicleId", "district-vehicle");
+    const result = await saveBusScheduleAction({ status: "idle", message: "" }, form);
     assert.equal(result.status, "success");
     const data = state.publishQueries.find(q => q.kind === "schedule").data;
     assert.equal(data.origin, "Karonga"); assert.equal(data.destination, "NkhataBay");

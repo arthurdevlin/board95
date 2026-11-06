@@ -19,7 +19,7 @@ beforeEach(() => { globalThis.busScheduleTest = { session: null, transactions: 0
 
 function validForm() {
   const form = new FormData();
-  for (const [name, value] of Object.entries({ operatorId: "company", origin: "Blantyre", destination: "Lilongwe", time: "06:30", departurePoint: "Company stage", fareMWK: "18000", seats: "52", vehicleModel: "Coach", plate: "BT 1234", active: "on" })) form.set(name, value);
+  for (const [name, value] of Object.entries({ operatorId: "company", vehicleId: "bus", origin: "Blantyre", destination: "Lilongwe", time: "06:30", departurePoint: "Company stage", fareMWK: "18000", seats: "52", active: "on" })) form.set(name, value);
   for (let day = 0; day < 7; day++) form.append("weekdays", String(day));
   return form;
 }
@@ -93,6 +93,7 @@ describe("bus company schedule management", () => {
     const queries = [];
     state.tx = {
       operator: { async findFirst() { return { id: "company" }; } },
+      vehicle: { async findFirst() { return { id: "bus", operatorId: "company", seats: 52, active: true }; } },
       busSchedule: {
         async findFirst(query) { return query.where.operatorId ? { id: "service", vehicle: { id: "bus", operatorId: "company", seats: 52 } } : null; },
         async update(query) { queries.push(query); },
@@ -109,6 +110,81 @@ describe("bus company schedule management", () => {
     assert.equal(queries[1].where.scheduleOverride, false);
     assert.equal(queries[1].where.scheduleId, "service");
     assert.ok(queries[1].where.departureAt.gt instanceof Date);
+  });
+
+  it("creates a schedule using a saved company bus without creating or editing a vehicle", async () => {
+    const state = globalThis.busScheduleTest;
+    state.session = { user: { id: "company-admin", role: "CUSTOMER" } };
+    let saved;
+    state.tx = {
+      operator: { async findFirst() { return { id: "company" }; } },
+      vehicle: { async findFirst(query) { assert.deepEqual(query.where, { id: "bus", operatorId: "company" }); return { id: "bus", seats: 52, active: true }; } },
+      busSchedule: { async findFirst() { return null; }, async create(query) { saved = query.data; } },
+      departurePoint: { async findFirst() { return { id: "stage" }; } },
+    };
+    const form = validForm();
+    // Old clients cannot overwrite fleet details through schedule creation.
+    form.set("vehicleModel", "Changed model");
+    form.set("plate", "ANOTHER-PLATE");
+    assert.equal((await saveBusScheduleAction(initial, form)).status, "success");
+    assert.equal(saved.vehicleId, "bus");
+    assert.equal(saved.seatsTotal, 52);
+  });
+
+  it("reassigns a timetable to a saved replacement bus while protecting booked departures", async () => {
+    const state = globalThis.busScheduleTest;
+    state.session = { user: { id: "company-admin", role: "CUSTOMER" } };
+    const changes = [];
+    state.tx = {
+      operator: { async findFirst() { return { id: "company" }; } },
+      vehicle: { async findFirst() { return { id: "replacement", seats: 40, active: true }; } },
+      busSchedule: {
+        async findFirst(query) { return query.where.operatorId ? { id: "service", vehicleId: "bus" } : null; },
+        async update(query) { changes.push(query); },
+      },
+      departurePoint: { async findFirst() { return { id: "stage" }; } },
+      trip: { async deleteMany(query) { changes.push(query); } },
+    };
+    const form = validForm();
+    form.set("scheduleId", "service"); form.set("vehicleId", "replacement"); form.set("seats", "40");
+    assert.equal((await saveBusScheduleAction(initial, form)).status, "success");
+    assert.equal(changes[0].data.vehicleId, "replacement");
+    assert.equal(changes[0].data.seatsTotal, 40);
+    assert.deepEqual(changes[1].where.bookings, { none: {} });
+    assert.equal(changes[1].where.scheduleOverride, false);
+  });
+
+  it("rejects missing buses, other-company buses, removed buses and excessive capacity", async () => {
+    const state = globalThis.busScheduleTest;
+    state.session = { user: { id: "company-admin", role: "CUSTOMER" } };
+    const missing = validForm(); missing.delete("vehicleId");
+    assert.equal((await saveBusScheduleAction(initial, missing)).status, "error");
+    assert.equal(state.transactions, 0);
+    for (const vehicle of [null, { id: "bus", seats: 52, active: false }, { id: "bus", seats: 40, active: true }]) {
+      state.tx = {
+        operator: { async findFirst() { return { id: "company" }; } },
+        vehicle: { async findFirst(query) { assert.equal(query.where.operatorId, "company"); return vehicle; } },
+      };
+      assert.equal((await saveBusScheduleAction(initial, validForm())).status, "error");
+    }
+  });
+
+  it("rejects conflicting assignments on overlapping operating days", async () => {
+    const state = globalThis.busScheduleTest;
+    state.session = { user: { id: "company-admin", role: "CUSTOMER" } };
+    state.tx = {
+      operator: { async findFirst() { return { id: "company" }; } },
+      vehicle: { async findFirst() { return { id: "bus", seats: 52, active: true }; } },
+      busSchedule: { async findFirst(query) {
+        assert.equal(query.where.vehicleId, "bus");
+        assert.equal(query.where.departureTime, "06:30");
+        assert.deepEqual(query.where.weekdays.hasSome, [0, 1, 2, 3, 4, 5, 6]);
+        return { id: "conflicting-service" };
+      } },
+    };
+    const result = await saveBusScheduleAction(initial, validForm());
+    assert.equal(result.status, "error");
+    assert.match(result.message, /already has a service/);
   });
 
   it("rejects operating days, times and fare overflow submitted outside the form", async () => {
