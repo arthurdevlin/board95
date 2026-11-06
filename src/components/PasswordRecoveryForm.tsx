@@ -3,7 +3,7 @@ import { KeyRound, Send } from "lucide-react";
 
 
 import { useState, type FormEvent } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 
 export function RequestPasswordResetForm() {
@@ -53,7 +53,7 @@ export function RequestPasswordResetForm() {
 }
 
 export function ResetPasswordForm() {
-  const [message, setMessage] = useState("");
+  const router = useRouter();
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
 
@@ -61,7 +61,6 @@ export function ResetPasswordForm() {
     event.preventDefault();
     setPending(true);
     setError("");
-    setMessage("");
     const data = new FormData(event.currentTarget);
     const token = new URLSearchParams(window.location.search).get("token") ?? "";
     const password = String(data.get("password") ?? "");
@@ -79,7 +78,8 @@ export function ResetPasswordForm() {
       if (result.error) {
         setError(result.error.message ?? "This reset link is invalid or expired.");
       } else {
-        setMessage("Your password has been reset. You can now sign in.");
+        router.replace("/sign-in?passwordReset=1");
+        router.refresh();
       }
     } catch {
       setError("We couldn’t connect. Check your connection and try again.");
@@ -99,7 +99,6 @@ export function ResetPasswordForm() {
         <input name="confirmPassword" type="password" autoComplete="new-password" minLength={8} required disabled={pending} />
       </label>
       {error && <p className="alert alert-error" role="alert">{error}</p>}
-      {message && <p className="alert" role="status">{message} <Link href="/sign-in">Sign in</Link></p>}
       <button className="btn btn-primary" disabled={pending}><KeyRound size={16} aria-hidden="true"/>
         {pending ? "Saving…" : "Set new password"}
       </button>

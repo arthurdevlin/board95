@@ -28,12 +28,14 @@ export default function AuthForm({
   googleEnabled = false,
   initialAccountType = "CUSTOMER",
   providerSignup = false,
+  passwordReset = false,
 }: {
   mode: Mode;
   next?: string;
   googleEnabled?: boolean;
   initialAccountType?: SignupAccountType;
   providerSignup?: boolean;
+  passwordReset?: boolean;
 }) {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
@@ -120,6 +122,7 @@ export default function AuthForm({
 
       <form onSubmit={handleSubmit} className="form-card" aria-busy={pending}>
         <div className="form-stack">
+          {mode === "sign-in" && passwordReset && <p className="alert" role="status">Your password has been reset. Sign in with your new password.</p>}
           {error && <p className="alert alert-error" role="alert" aria-live="polite">{error}</p>}
 
           {mode === "sign-up" && <>
