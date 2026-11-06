@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+export { getBoard95AdminEmails } from "@/lib/admin-email-settings";
 
 type Board95Email = {
   to: string | null | undefined;
@@ -17,7 +18,12 @@ function escapeHtml(value: string) {
   })[character] ?? character);
 }
 
-export async function sendBoard95Email({ to, subject, lines, action }: Board95Email) {
+export async function sendBoard95Email({ to, subject, lines, action }: Omit<Board95Email, "to"> & { to: Board95Email["to"] | string[] }): Promise<boolean> {
+  if (Array.isArray(to)) {
+    const recipients = [...new Set(to.map(email => email.trim().toLowerCase()).filter(Boolean))];
+    const results = await Promise.all(recipients.map(recipient => sendBoard95Email({ to: recipient, subject, lines, action })));
+    return results.length > 0 && results.every(Boolean);
+  }
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM_EMAIL;
   if (!to) return false;

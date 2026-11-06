@@ -20,6 +20,8 @@ Do not run `prisma migrate reset` against a database with data you need. To chec
 
 ## Checks
 
+Administrators can configure the primary notification inbox and an optional second inbox under **Administration → Email delivery queue → Board95 notification inboxes**. Saved inboxes override `BOARD95_ADMIN_EMAIL`; without saved settings, that environment variable remains the fallback. Both inboxes receive administrator alerts and booking/message fallbacks when an operator has no email. This does not change sign-in emails or copy password resets to another inbox. Apply migrations before using this setting. The Resend testing sender can deliver only to the Resend account email; a second recipient needs a verified sending domain.
+
 - `npm run lint` runs ESLint.
 - `npm run typecheck` generates Prisma and Next.js types, then checks TypeScript types.
 - `npm test` runs the helper tests with Node's built-in test runner.

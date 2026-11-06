@@ -9,7 +9,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { dayRange, toMalawiDate } from "@/lib/dates";
 import { prisma } from "@/lib/prisma";
-import { board95Url, deliverEmailDelivery, sendBoard95Email } from "@/lib/email";
+import { board95Url, deliverEmailDelivery, getBoard95AdminEmails, sendBoard95Email } from "@/lib/email";
 import { allowRequest } from "@/lib/rate-limit";
 import { hashGuestToken, matchesGuestToken, normalizeMalawiPhone, normalizeBookingReference } from "@/lib/guest-access";
 import { removeCarPhoto, storeCarPhoto } from "@/lib/car-photo-storage";
@@ -73,7 +73,7 @@ export async function applyForAccountTypeFromSignup(kind: "TAXI_OWNER" | "CAR_HI
   if (!existing) {
     await prisma.application.create({ data: { userId: session.user.id, kind, displayName: name, phone: rawPhone.startsWith("+") ? rawPhone : `+265${rawPhone.slice(1)}` } });
     await sendBoard95Email({
-      to: process.env.BOARD95_ADMIN_EMAIL,
+      to: await getBoard95AdminEmails(),
       subject: `New ${kind === "TAXI_OWNER" ? "taxi driver" : "car-hire provider"} application`,
       lines: [`${name} submitted a ${kind === "TAXI_OWNER" ? "taxi driver" : "car-hire provider"} application.`, `Applicant: ${session.user.name} · ${session.user.email}`, `Mobile: ${rawPhone}`],
       action: { label: "Review application", href: board95Url("/admin") },
@@ -215,7 +215,7 @@ export async function requestSeatAction(
     const route = `${transportLocationName(bookingForEmail.trip.origin)} to ${transportLocationName(bookingForEmail.trip.destination)}`;
     const reference = bookingForEmail.id.slice(-8).toUpperCase();
     const departure = formatTimestamp(bookingForEmail.trip.departureAt);
-    const operatorEmail = bookingForEmail.trip.operator.owner?.email ?? process.env.BOARD95_ADMIN_EMAIL;
+    const operatorEmail = bookingForEmail.trip.operator.owner?.email ?? await getBoard95AdminEmails();
     await Promise.all([
       sendBoard95Email({ to: operatorEmail, subject: "New passenger booking", lines: [`A new request is waiting for ${route}.`, `Passenger: ${bookingForEmail.guestName ?? "Passenger"} · ${bookingForEmail.guestPhone ?? "No mobile"}`, `Departure: ${departure}. Reference: ${reference}.`], action: { label: "Open operator dashboard", href: board95Url("/operator") } }),
       sendBoard95Email({ to: bookingForEmail.guestEmail ?? bookingForEmail.user?.email, subject: "Booking request received", lines: [`Your request for ${route} is pending operator confirmation.`, `Departure: ${departure}. Reference: ${reference}.`], action: guestAccessToken ? { label: "Find your booking", href: board95Url("/bookings/lookup") } : undefined }),
@@ -432,7 +432,7 @@ export async function submitAccountApplicationAction(formData: FormData) {
   if (approvedRequest) throw new Error("This account type has already been approved for you.");
   await prisma.application.create({ data: { userId: session.user.id, kind: kind as "TAXI_OWNER" | "BUS_COMPANY" | "CAR_HIRER", displayName, phone: rawPhone.startsWith("+") ? rawPhone : `+265${rawPhone.slice(1)}` } });
   await sendBoard95Email({
-    to: process.env.BOARD95_ADMIN_EMAIL,
+    to: await getBoard95AdminEmails(),
     subject: "New account application",
     lines: [`${displayName} submitted a ${kind.replace("_", " ").toLowerCase()} application.`, `Applicant: ${session.user.name} · ${session.user.email}`, `Mobile: ${rawPhone}`],
     action: { label: "Review application", href: board95Url("/admin") },
@@ -771,7 +771,7 @@ export async function sendBookingMessageAction(formData: FormData): Promise<neve
   const senderName = guestAuthorized ? booking.guestName ?? "Passenger" : session?.user?.name ?? "Passenger";
   await prisma.bookingMessage.create({ data: { bookingId, senderId: guestAuthorized ? null : session?.user?.id ?? null, guestSenderName: guestAuthorized ? senderName : null, body } });
   const recipient = isPassenger
-    ? booking.trip.operator.owner?.email ?? process.env.BOARD95_ADMIN_EMAIL
+    ? booking.trip.operator.owner?.email ?? await getBoard95AdminEmails()
     : guestAuthorized ? booking.trip.operator.owner?.email : booking.guestEmail ?? booking.user?.email;
   const recipientName = isPassenger || guestAuthorized ? booking.trip.operator.owner?.name ?? "the service team" : booking.guestName ?? booking.user?.name ?? "Passenger";
   await sendBoard95Email({

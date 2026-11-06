@@ -47,7 +47,7 @@ const mocks = {
   "next/cache": "export function revalidatePath() {} export function updateTag() {} export function cacheLife() {} export function cacheTag() {}",
   "next/navigation": "export function redirect(destination) { throw Object.assign(new Error('Test redirect'), { destination }); }",
   "better-auth/crypto": "export async function hashPassword() { throw new Error('Unexpected password hashing'); }",
-  "@/lib/email": "export function board95Url() {} export function deliverEmailDelivery() {} export function sendBoard95Email() {}",
+  "@/lib/email": "export function board95Url() {} export async function getBoard95AdminEmails() { return []; } export function deliverEmailDelivery() {} export function sendBoard95Email() {}",
   "@/lib/rate-limit": "export async function allowRequest() { return globalThis.board95ActionTest.allowRequests ?? false; }",
   "@/lib/car-photo-storage": "export function removeCarPhoto() {} export function storeCarPhoto() {}",
   "@/lib/bus-schedules": "export async function ensureBusDepartures() {}",

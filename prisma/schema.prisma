@@ -154,6 +154,12 @@ enum OperatorMemberRole {
 // createdAt, updatedAt) are managed by Better Auth. role and phone are our
 // own additions, wired in as Better Auth "additional fields".
 
+model Board95EmailSettings {
+  id             String @id @default("board95")
+  primaryEmail   String
+  secondaryEmail String?
+}
+
 model User {
   id            String   @id @default(cuid())
   name          String
